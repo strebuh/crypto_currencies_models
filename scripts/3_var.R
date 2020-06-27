@@ -5,136 +5,131 @@ library(vars)
 
 source("functions/finding_stationary_pair.R")
 
+# ---------------------------------------------------- PREPARE DATA ---------------------------------------------------------------------------
+
 # load list of dataframes
 crypto_list <- readRDS("./data/crypto_currencies_data.RDS")
-# 0.3862           0.01  -3.834585 1 0 -0.8827 compare combin_adf
-names_ <- names(crypto_pair)
-
-# crypto_pair <- cryptoPairPlots(crypto_list, smpl1_dt_sect, n = 5, colerograms = TRUE, diffPlots=TRUE, nObs = 504)
 
 # load dataframe with results of cointegration test of each comibation of variables
 cointegr_tb_signf2 <- readRDS("./data/cointegr_tb_signf2.RDS")
 
+# get plots of given pair
+# crypto_pair <- cryptoPairPlots(crypto_list, cointegr_tb_signf2, n = 28, colerograms = TRUE, diffPlots=TRUE, nObs = 398)
+# 398 = 365 + 30 + 3
+
 # get dataframe with prices and first differences of chosen cointegrated pair 
 crypto_pair_all <- getDifferencesXTS(cointegr_tb_signf2, n_table = 28, n_obs_is = 365, n_obs_ooc = 30, crypto_list)
-class(crypto_pair_all) # list
 
-crypto_pair <- crypto_pair_all$in_smpl
-crypto_pair_oos <- head(crypto_pair_all$oo_smpl, 15)
-dim(crypto_pair_oos) #[1] 15  4
+# retrieve data from object
+
+# in sample
+crypto_pair <- crypto_pair_all$in_smpl 
+dim(crypto_pair) # 15  4, 15 days for prediction 
+
+# out of sample
+crypto_pair_oos <- head(crypto_pair_all$oo_smpl, 15) 
+dim(crypto_pair_oos) # [1] 365   4, 365 days for building model 
+
+# compare if end of in-sample matches start of out-of-sample
 tail(crypto_pair)
 head(crypto_pair_oos)
 
-dim(crypto_pair) # [1] 365   4
+# ------------------------------------------------- VAR MODEL ------------------------------------------------------------------------------
+# selection without seasons
+VARselect(crypto_pair[,1:2], lag.max = 14)
 
-# -------------------------------------------------------------------------------------------------------------------------------
-VARselect(crypto_pair[,1:2], # input data for VAR
-          lag.max = 14)     # maximum lag
-
-# $selection
 # AIC(n)  HQ(n)  SC(n) FPE(n) 
 #     6      1      1      6 
-# 
-# $criteria
-# 1             2             3             4             5             6             7             8             9            10            11
-# AIC(n) -3.049383e+01 -3.049253e+01 -3.048485e+01 -3.048451e+01 -3.047849e+01 -3.049506e+01 -3.047835e+01 -3.046960e+01 -3.045579e+01 -3.044057e+01 -3.044107e+01
-# HQ(n)  -3.046756e+01 -3.044875e+01 -3.042356e+01 -3.040571e+01 -3.038218e+01 -3.038124e+01 -3.034702e+01 -3.032075e+01 -3.028944e+01 -3.025670e+01 -3.023969e+01
-# SC(n)  -3.042783e+01 -3.038253e+01 -3.033086e+01 -3.028652e+01 -3.023650e+01 -3.020907e+01 -3.014837e+01 -3.009562e+01 -3.003781e+01 -2.997859e+01 -2.993510e+01
-# FPE(n)  5.710827e-14  5.718285e-14  5.762374e-14  5.764401e-14  5.799328e-14  5.704205e-14  5.800522e-14  5.851790e-14  5.933511e-14  6.024956e-14  6.022482e-14
-# 12            13            14
-# AIC(n) -3.042650e+01 -3.042748e+01 -3.041561e+01
-# HQ(n)  -3.020762e+01 -3.019109e+01 -3.016171e+01
-# SC(n)  -2.987653e+01 -2.983352e+01 -2.977765e+01
-# FPE(n)  6.111495e-14  6.106273e-14  6.180087e-14
+# AIC(n)  HQ(n)  SC(n) FPE(n) 
+# 1      1      1      1 
 
 # -------------------------------------------------------------------------------------------------------------------------------
-VARselect(crypto_pair[,1:2], # input data for VAR
-          lag.max = 14,     # maximum lag
-          season = 7)     # seasonal frequency
+# selection without weakly seasons
+VARselect(crypto_pair[,1:2],
+          lag.max = 14,     
+          season = 7)     
 
 # $selection
 # AIC(n)  HQ(n)  SC(n) FPE(n) 
 # 1      1      1      1 
-# 
-# $criteria
-#                   1             2             3             4             5             6             7             8             9            10            11
-# AIC(n) -3.046457e+01 -3.046076e+01 -3.045229e+01 -3.045186e+01 -3.044669e+01 -3.046205e+01 -3.044449e+01 -3.043951e+01 -3.042532e+01 -3.040847e+01 -3.040926e+01
-# HQ(n)  -3.038577e+01 -3.036445e+01 -3.033847e+01 -3.032053e+01 -3.029785e+01 -3.029570e+01 -3.026063e+01 -3.023813e+01 -3.020644e+01 -3.017208e+01 -3.015535e+01
-# SC(n)  -3.026658e+01 -3.021877e+01 -3.016631e+01 -3.012188e+01 -3.007271e+01 -3.004408e+01 -2.998252e+01 -2.993354e+01 -2.987535e+01 -2.981450e+01 -2.977129e+01
-# FPE(n)  5.880510e-14  5.903068e-14  5.953412e-14  5.956197e-14  5.987369e-14  5.896450e-14  6.001367e-14  6.031889e-14  6.118720e-14  6.223479e-14  6.219496e-14
-# 12            13            14
-# AIC(n) -3.039454e+01 -3.039376e+01 -3.038187e+01
-# HQ(n)  -3.012312e+01 -3.010483e+01 -3.007543e+01
-# SC(n)  -2.971257e+01 -2.966780e+01 -2.961191e+01
-# FPE(n)  6.312794e-14  6.318915e-14  6.395865e-14
+
 
 # -------------------------------------------------------------------------------------------------------------------------------
-# let's comput model with 6 lags
-crypto_pair.var1s <- VAR(crypto_pair[,1:2],
-                    p = 6,  # order of VAR model
-                    season = 7 ) ## include in both the month?
+# VAR model with 6 lags and seasons
+crypto_pair.var6s <- VAR(crypto_pair[,1:2],
+                         p = 6,
+                         season = 7) 
 
-summary(crypto_pair.var1s) ## you rarely interpet interpret ## ~44:00
+summary(crypto_pair.var6s) ## you rarely interpet interpret ## ~44:00
 # seasons are not significant
 
-# -------------------------------------------------------------------------------------------------------------------------------
-crypto_pair.var1 <- VAR(crypto_pair[,1:2], p = 6)
-summary(crypto_pair.var1)
-# cardano = 
-# Estimate Std. Error t value Pr(>|t|)    
-# cardano.l1  0.9942175  0.0694343  14.319  < 2e-16 ***
-#   siacoin.l1 -2.8090025  1.4808967  -1.897  0.05868 .  
-# cardano.l2  0.1030454  0.0944719   1.091  0.27614    
-# siacoin.l2  1.0956634  1.9659536   0.557  0.57767    
-# cardano.l3 -0.2557171  0.0938754  -2.724  0.00678 ** 
-#   siacoin.l3  2.2915550  1.9648335   1.166  0.24430    
-# cardano.l4  0.1699510  0.0931632   1.824  0.06898 .  
-# siacoin.l4 -1.5124139  1.9645746  -0.770  0.44192    
-# cardano.l5  0.1263938  0.0931861   1.356  0.17587    
-# siacoin.l5  0.2143595  1.9581938   0.109  0.91289    
-# cardano.l6 -0.1069923  0.0706160  -1.515  0.13065    
-# siacoin.l6 -0.5961106  1.4735938  -0.405  0.68607    
-# const       0.0010819  0.0004515   2.397  0.01708 *  
+#--------------------
+# siacoin = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + 
+#   cardano.l6 + siacoin.l6 + const + sd1 + sd2 + sd3 + sd4 + sd5 + sd6 
 
-# siacoin 
-# Estimate Std. Error t value Pr(>|t|)    
+# cardano.l1  6.126e-03  3.278e-03   1.869   0.0625 .  
+# siacoin.l1  7.739e-01  6.942e-02  11.147   <2e-16 ***
+# cardano.l3 -8.538e-03  4.446e-03  -1.920   0.0556 .  
+# siacoin.l3  2.072e-01  9.204e-02   2.251   0.0250 *  
+# siacoin.l6 -1.514e-01  6.905e-02  -2.193   0.0290 *  
+# const       4.531e-05  2.108e-05   2.149   0.0323 *
+# only few variables significant
+
+# cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 
+# + const + sd1 + sd2 + sd3 + sd4 + sd5 + sd6 
+# cardano.l1  1.0076410  0.0699406  14.407  < 2e-16 ***
+# siacoin.l1 -2.9000742  1.4813949  -1.958  0.05109 . 
+# cardano.l3 -0.2493847  0.0948721  -2.629  0.00896 ** 
+# cardano.l4  0.1735540  0.0941413   1.844  0.06612 .  
+# const       0.0010721  0.0004499   2.383  0.01772 *  
+  
+
+# -------------------------------------------------------------------------------------------------------------------------------
+# model without seasonality component
+crypto_pair.var6 <- VAR(crypto_pair[,1:2], p = 6)
+
+summary(crypto_pair.var6)
+# cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
+#   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const
+# cardano.l1  0.9942175  0.0694343  14.319  < 2e-16 ***
+# siacoin.l1 -2.8090025  1.4808967  -1.897  0.05868 .  
+# cardano.l3 -0.2557171  0.0938754  -2.724  0.00678 ** 
+# cardano.l4  0.1699510  0.0931632   1.824  0.06898 .  
+# const       0.0010819  0.0004515   2.397  0.01708 *  
+  
+# siacoin = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
+#   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const 
 # cardano.l1  5.653e-03  3.235e-03   1.748   0.0814 .  
 # siacoin.l1  7.800e-01  6.899e-02  11.307   <2e-16 ***
-# cardano.l2  9.620e-04  4.401e-03   0.219   0.8271    
-# siacoin.l2  6.258e-03  9.158e-02   0.068   0.9456    
 # cardano.l3 -8.475e-03  4.373e-03  -1.938   0.0534 .  
 # siacoin.l3  2.084e-01  9.153e-02   2.276   0.0234 *  
-#   cardano.l4  5.022e-04  4.340e-03   0.116   0.9080    
-# siacoin.l4  3.731e-02  9.152e-02   0.408   0.6837    
-# cardano.l5  5.773e-03  4.341e-03   1.330   0.1845    
-# siacoin.l5 -7.128e-03  9.122e-02  -0.078   0.9378    
-# cardano.l6 -5.466e-04  3.290e-03  -0.166   0.8681    
 # siacoin.l6 -1.422e-01  6.865e-02  -2.072   0.0390 *  
-  # const       4.546e-05  2.103e-05   2.161   0.0314 * 
+# const       4.546e-05  2.103e-05   2.161   0.0314 *  
+  
 
-serial.test(crypto_pair.var1) ## 57:00+
+serial.test(crypto_pair.var6) ## 57:00+
 # data:  Residuals of VAR object crypto_pair.var1
 # Chi-squared = 46.402, df = 40, p-value = 0.2253
 
-serial.test(crypto_pair.var1, type = "BG") # The null hypothesis is that there is no serial correlation of any order up to p.
+serial.test(crypto_pair.var6, type = "BG") # The null hypothesis is that there is no serial correlation of any order up to p.
 # data:  Residuals of VAR object crypto_pair.var1
 # Chi-squared = 22.503, df = 20, p-value = 0.3139
 
-Box.test(resid(crypto_pair.var1)[,1], type = "Ljung-Box", lag =  6) # The data are independently distributed 
-Box.test(resid(crypto_pair.var1)[,2], type = "Ljung-Box", lag =  6)
-# both reject
+# Box.test(resid(crypto_pair.var6)[,1], type = "Ljung-Box", lag =  6) 
+# Box.test(resid(crypto_pair.var6)[,2], type = "Ljung-Box", lag =  6)
 
 # lets do some basic diagnostics
-plot(crypto_pair.var1)
+plot(crypto_pair.var6)
 # no autocorrelation
 
-# -------------------------------------------------------------------------------------------------------------------------------
+# ------------------ restricted VAR 1
+# automatic restriction
 restrict(crypto_pair.var1, method = "ser")
 # cardano = cardano.l1 + siacoin.l1 + cardano.l2 + cardano.l3 + siacoin.l3 + siacoin.l6 + const 
 # siacoin = cardano.l1 + siacoin.l1 + cardano.l3 + siacoin.l3 + cardano.l5 + siacoin.l6 
-restrict <- matrix(c(1, 1, 1, 1, 1, 1, 
-                     1, 0, 1, 0, 0, 1),
-                   nrow=2, ncol=6, byrow=TRUE)
+# restrict <- matrix(c(1, 1, 1, 1, 1, 1, 1,
+#                      1, 0, 1, 0, 0, 1, 0),
+#                    nrow=2, ncol=7, byrow=TRUE)
 
 
 # The Granger causality results showed the bi-directional feedback on 5% level.
@@ -147,66 +142,200 @@ casuality <- readRDS("./gr_casual_d_siacoin_d_cardano.RDS")
 # 5    5   0.105121398655361           no  0.00242529384210634        cause
 # 6    6  0.0316361829048299        cause  0.00472698599569277        cause
 # 7    7 0.00319632534714409        cause  0.00524864370423215        cause
-restrict2 <- matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-                      1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1),
-                   nrow=2, ncol=13, byrow=TRUE)
-crypto_pair.var1_restr <- restrict(crypto_pair.var1, method = "man", resmat = restrict2)
-# [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]
-# [1,]    1    1    1    1    1    1    1    1    1     1     1     1     1
-# [2,]    1    1    1    1    1    1    0    1    1     0     0     1     1
-# > restrict(crypto_pair.var1, method = "man", resmat = restrict2)
-# 
-# VAR Estimation Results:
-#   ======================= 
-#   
-#   Estimated coefficients for equation cardano: 
-#   ============================================ 
-#   Call:
-#   cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const 
-# 
-# cardano.l1   siacoin.l1   cardano.l2   siacoin.l2   cardano.l3   siacoin.l3   cardano.l4   siacoin.l4   cardano.l5   siacoin.l5   cardano.l6   siacoin.l6 
-# 0.997806735 -3.803095502  0.264256093 -0.407698073 -0.348172416  6.052334765  0.120188502 -3.244932861 -0.013295132  2.349845793 -0.004565477 -2.154955538 
-# const 
-# 0.001574729 
-# 
-# 
-# Estimated coefficients for equation siacoin: 
-#   ============================================ 
-#   Call:
-#   siacoin = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + siacoin.l4 + cardano.l5 + siacoin.l6 + const 
-# 
-# cardano.l1    siacoin.l1    cardano.l2    siacoin.l2    cardano.l3    siacoin.l3    siacoin.l4    cardano.l5    siacoin.l6         const 
-# 4.089622e-03  7.531305e-01  5.796415e-03 -3.594466e-02 -1.113982e-02  3.132136e-01 -2.338287e-02  5.727554e-03 -1.357849e-01  4.004316e-05 
+# restrict based on Granger casuality test result and previous model results
 
-summary.var1_restr <- summary(crypto_pair.var1_restr)
+# only GRANGER
+restrict1 <- matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, # ind-cardano
+                      0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1), # ind-siacoin
+                   nrow=2, ncol=13, byrow=TRUE) # only GC
 
-serial.test(crypto_pair.var1_restr, type = "BG") 
-serial.test(crypto_pair.var1_restr) 
-# data:  Residuals of VAR object crypto_pair.var1_restricted
-# Chi-squared = 19.128, df = 20, p-value = 0.5135
-# still no auticorrelation, although lower p-value
+crypto_pair.var6_restr1 <- restrict(crypto_pair.var6, method = "man", resmat = restrict1)
+summary(crypto_pair.var6_restr1)
+# cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
+#   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const
+# cardano.l1  0.9942175  0.0694343  14.319  < 2e-16 ***
+# siacoin.l1 -2.8090025  1.4808967  -1.897  0.05868 .
+# cardano.l3 -0.2557171  0.0938754  -2.724  0.00678 ** 
+# cardano.l4  0.1699510  0.0931632   1.824  0.06898 .  
+# const       0.0010819  0.0004515   2.397  0.01708 *  
+  
+# siacoin = siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + siacoin.l4 + siacoin.l5 + cardano.l6 + siacoin.l6 + const 
+# siacoin.l1  8.528e-01  5.284e-02  16.139  < 2e-16 ***
+# cardano.l2  5.794e-03  3.244e-03   1.786 0.075010 . 
+# siacoin.l3  1.916e-01  8.729e-02   2.195 0.028823 *  
+# cardano.l6  3.508e-03  2.092e-03   1.677 0.094399 .  
+# siacoin.l6 -1.962e-01  5.869e-02  -3.343 0.000919 ***
+# const       4.905e-05  2.104e-05   2.331 0.020296 *  
+
+serial.test(crypto_pair.var6_restr1, type = "BG") 
+# data:  Residuals of VAR object crypto_pair.var6_restr1
+# Chi-squared = 29.258, df = 20, p-value = 0.08281
+serial.test(crypto_pair.var6_restr1) 
+# data:  Residuals of VAR object crypto_pair.var6_restr1
+# Chi-squared = 57.742, df = 40, p-value = 0.03431
+
+plot(crypto_pair.var6_restr1)
+# although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
+
+# ------------------ restricted VAR 2
+
+# interesting notion, that for siacoin as dependent variable eqation, at lag one cardano is not Granger cause, although this component is significant
+# as  regressor at 10% significance level (~6%), lags 2,3,6,7 are not significant at all
+
+# Granger and first VAR model restriction
+restrict2 <- matrix(c(1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, # ind-cardano
+                      0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1), # ind-siacoin
+                    nrow=2, ncol=13, byrow=TRUE)
+
+# lags d_siacoin_d_cardano if_granger_1 
+#    1   0.276727171250911           no 
+#    2  0.0307660109222102        cause 
+#    3   0.045346250988177        cause 
+#    4  0.0929440887878814           no 
+#    5   0.105121398655361           no 
+#    6  0.0316361829048299        cause 
+#    7 0.00319632534714409        cause 
+
+
+# cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
+#   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const
+# cardano.l1  0.9942175  0.0694343  14.319  < 2e-16 ***
+# siacoin.l1 -2.8090025  1.4808967  -1.897  0.05868 .  
+# cardano.l3 -0.2557171  0.0938754  -2.724  0.00678 ** 
+# cardano.l4  0.1699510  0.0931632   1.824  0.06898 .  
+# const       0.0010819  0.0004515   2.397  0.01708 *  
+
+# siacoin = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
+#   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const 
+# cardano.l1  5.653e-03  3.235e-03   1.748   0.0814 .  
+# siacoin.l1  7.800e-01  6.899e-02  11.307   <2e-16 ***
+# cardano.l3 -8.475e-03  4.373e-03  -1.938   0.0534 .  
+# siacoin.l3  2.084e-01  9.153e-02   2.276   0.0234 *  
+# siacoin.l6 -1.422e-01  6.865e-02  -2.072   0.0390 *  
+# const       4.546e-05  2.103e-05   2.161   0.0314 *  
+
+crypto_pair.var6_restr2 <- restrict(crypto_pair.var6, method = "man", resmat = restrict2)
+summary(crypto_pair.var6_restr2)
+
+# cardano = cardano.l1 + siacoin.l1 + cardano.l3 + cardano.l4 + const 
+# cardano.l1  1.0086771  0.0400269  25.200  < 2e-16 ***
+# siacoin.l1 -1.4883032  0.5434007  -2.739  0.00648 ** 
+# cardano.l3 -0.1091386  0.0634560  -1.720  0.08632 .  
+# cardano.l4  0.1378062  0.0519236   2.654  0.00831 ** 
+# const       0.0010980  0.0004418   2.485  0.01340 *  
+
+# siacoin.l1  8.747e-01  3.967e-02  22.050  < 2e-16 ***
+# cardano.l3  2.967e-03  9.784e-04   3.033  0.00260 ** 
+# siacoin.l3  1.136e-01  5.046e-02   2.252  0.02491 *  
+# siacoin.l6 -8.486e-02  3.234e-02  -2.624  0.00906 ** 
+# const       4.749e-05  2.089e-05   2.273  0.02363 * 
+
+serial.test(crypto_pair.var6_restr2, type = "BG") 
+# data:  Residuals of VAR object crypto_pair.var6_restr2
+# Chi-squared = 35.334, df = 20, p-value = 0.0184
+serial.test(crypto_pair.var6_restr2) 
+# data:  Residuals of VAR object crypto_pair.var6_restr2
+# Chi-squared = 80.197, df = 40, p-value = 0.0001671
+
+plot(crypto_pair.var6_restr2)
+# although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
-VARbic(crypto_pair.var1_restr)
-VARaic(crypto_pair.var1_restr)
-VARbic(crypto_pair.var1)
-VARaic(crypto_pair.var1)
-
-AIC(crypto_pair.var1_restr, crypto_pair.var1)
-BIC(crypto_pair.var1_restr, crypto_pair.var1)
+AIC(crypto_pair.var6, crypto_pair.var6_restr1, crypto_pair.var6_restr2)
+BIC(crypto_pair.var6, crypto_pair.var6_restr1, crypto_pair.var6_restr2)
+# > AIC(crypto_pair.var6, crypto_pair.var6_restr1, crypto_pair.var6_restr2)
 # df       AIC
-# crypto_pair.var1_restr 23 -8812.336
-# crypto_pair.var1       26 -8806.954
-# > BIC(crypto_pair.var1_restr, crypto_pair.var1)
+# crypto_pair.var6        26 -8900.090
+# crypto_pair.var6_restr1 23 -8895.827
+# crypto_pair.var6_restr2 10 -8897.418
+# > BIC(crypto_pair.var6, crypto_pair.var6_restr1, crypto_pair.var6_restr2)
 # df       BIC
-# crypto_pair.var1_restr 23 -8723.213
-# crypto_pair.var1       26 -8706.205
+# crypto_pair.var6        26 -8799.123
+# crypto_pair.var6_restr1 23 -8806.510
+# crypto_pair.var6_restr2 10 -8858.585
 
-# both prefer restricted model
+# AIC prefere the most restricted model, BIC the leastwhich makes sense, however due to correlation in residuals
+
+#----------------------------------------------------------------- FORECAST -------------------------------------------------------------------
+
+# and run a forecast
+crypto_pair.var6.forecast <- predict(crypto_pair.var6,
+                                     n.ahead = 15,
+                                     ci = 0.95) 
+
+names(crypto_pair.var6)
+# [1] "fcst"     "endog"    "model"    "exo.fcst"
+
+# VAR forecasts for both currencies
+crypto_pair.var6.forecast$fcst$cardano
+crypto_pair.var6.forecast$fcst$siacoin
+
+dim(crypto_pair_oos)
+head(crypto_pair_oos)
+cardano_forecast_VAR <- xts(crypto_pair.var6.forecast$fcst$cardano[,-4], 
+                        index(crypto_pair_oos))
+# lets change the names 
+names(cardano_forecast_VAR)
+names(cardano_forecast_VAR) <- c("cardano_fore_VAR", "cardano_lower_VAR", "cardano_upper_VAR")
+
+# lets do the same for cpi forecasts 
+siacoin_forecast_VAR <- xts(crypto_pair.var6.forecast$fcst$siacoin[,-4], 
+                        index(crypto_pair_oos))
+names(siacoin_forecast_VAR) <- c("siacoin_fore_VAR", "siacoin_lower_VAR", "siacoin_upper_VAR")
+
+dim(crypto_pair_oos) # [1] 15  4
+# crypto_pair[(nrow(crypto_pair)-29):nrow(crypto_pair),1:4] <- crypto_pair_oos
+
+# add oos observations
+crypto_pair <- rbind(crypto_pair, crypto_pair_oos)
+tail(crypto_pair, 20)
+
+# lets put the data together
+crypto_pair_VAR <- merge(crypto_pair,
+                     cardano_forecast_VAR,
+                     siacoin_forecast_VAR)
+names(crypto_pair_VAR)
+# [1] "cardano"           "siacoin"           "d_cardano"         "d_siacoin"         "cardano_fore_VAR"  "cardano_lower_VAR" "cardano_upper_VAR" "siacoin_fore_VAR" 
+# [9] "siacoin_lower_VAR" "siacoin_upper_VAR"
+
+plot(crypto_pair_VAR[, c("cardano", "cardano_fore_VAR",
+                     "cardano_lower_VAR", "cardano_upper_VAR")], 
+     major.ticks = "years", 
+     grid.ticks.on = "years",
+     grid.ticks.lty = 3,
+     main = "15 days forecast of cardano",
+     col = c("black", "blue", "red", "red"))
+
+plot(crypto_pair_VAR[, c("siacoin", "siacoin_fore_VAR",
+                     "siacoin_lower_VAR", "siacoin_upper_VAR")], 
+     major.ticks = "years", 
+     grid.ticks.on = "years",
+     grid.ticks.lty = 3,
+     main = "15 days forecast of siacoin",
+     col = c("black", "blue", "red", "red"))
+
+# errors
+crypto_pair_VAR$mae.cardano   <-  abs(crypto_pair_VAR$cardano - crypto_pair_VAR$cardano_fore)
+crypto_pair_VAR$mse.cardano   <-  (crypto_pair_VAR$cardano - crypto_pair_VAR$cardano_fore)^2
+crypto_pair_VAR$mape.cardano  <-  abs((crypto_pair_VAR$cardano - crypto_pair_VAR$cardano_fore)/crypto_pair_VAR$cardano)
+crypto_pair_VAR$amape.cardano <-  abs((crypto_pair_VAR$cardano - crypto_pair_VAR$cardano_fore) / 
+                                    (crypto_pair_VAR$cardano + crypto_pair_VAR$cardano_fore))
+crypto_pair_VAR$mae.siacoin   <-  abs(crypto_pair_VAR$siacoin - crypto_pair_VAR$siacoin_fore)
+crypto_pair_VAR$mse.siacoin   <-  (crypto_pair_VAR$siacoin - crypto_pair_VAR$siacoin_fore)^2
+crypto_pair_VAR$mape.siacoin  <-  abs((crypto_pair_VAR$siacoin - crypto_pair_VAR$siacoin_fore)/crypto_pair_VAR$siacoin)
+crypto_pair_VAR$amape.siacoin <-  abs((crypto_pair_VAR$siacoin - crypto_pair_VAR$siacoin_fore) / 
+                                    (crypto_pair_VAR$siacoin + crypto_pair_VAR$siacoin_fore))
+
+# get measures
+colMeans(crypto_pair_VAR[,11:18], na.rm = TRUE)
+# mae.cardano   mse.cardano  mape.cardano amape.cardano   mae.siacoin   mse.siacoin  mape.siacoin amape.siacoin 
+# 5.283817e-03  4.661611e-05  9.078719e-02  4.884206e-02  1.348296e-04  3.538193e-08  5.895547e-02  3.099178e-02 
 
 
+# --------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------- VECM ----------------------------------------------------------------------------------
-johan.test.trace <- ca.jo(crypto_pair[,1:2],         # data 
+# --------------------------------------------------------------------------------------------------------------------------------------------------------
+johan.test.trace <- ca.jo(crypto_pair[,1:2],         
                           ecdet = "const", # "none", "const", "trend"
                           type = "trace",  
                           K = 7) 
@@ -232,7 +361,7 @@ johan.test.eigen <- ca.jo(crypto_pair[,1:2],         # data
 #                           season = 12) 
 summary(johan.test.eigen) 
 
-#--------------------------------------------------------------------------------------------------------------------
+#-------------------------------------- model ------------------------------------------------------------------------------
 crypto_pair.vecm.1 <- cajorls(johan.test.eigen, r = 1) 
 
 summary(crypto_pair.vecm.1$rlm)
@@ -249,6 +378,8 @@ crypto_pair.vecm.1.asVAR <- vec2var(johan.test.eigen, r = 1)
 # lets see the result
 crypto_pair.vecm.1.asVAR
 
+#-------------------------------------- model ------------------------------------------------------------------------------
+
 # based on the reparametrized model
 # one can calculate and plot Impulse Response Functions
 plot(irf(crypto_pair.vecm.1.asVAR, 
@@ -257,6 +388,8 @@ plot(irf(crypto_pair.vecm.1.asVAR,
 # and variance decomposition
 plot(fevd(crypto_pair.vecm.1.asVAR, 
           n.ahead = 28))
+
+#-------------------------------------- model ------------------------------------------------------------------------------
 
 # autocorrelation residuals
 head(residuals(crypto_pair.vecm.1.asVAR))
