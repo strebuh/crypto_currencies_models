@@ -4,14 +4,12 @@ x <- getURL("https://raw.github.com/aronlindberg/latent_growth_classes/master/LG
 # library(devtools)
 # source_gist("4b7f54ce0da6d4e462f7d07b9b2a39e5", filename = "getCryptoHistoricalPrice.R")
 source("functions/getCryptoHistoricalPrice.R")
+source("functions/finding_stationary_pair.R")
 
 
 library(tidyverse)
 library(rvest)
 library(data.table)
-
-
-
 
 #  ------------------   get list of all top 100 crypto -----------------------------
 #rvest
@@ -44,7 +42,6 @@ top100_crypto$Name <- gsub("\\s", "-", top100_crypto$Name)
 # testing integration order
 
 # -------------------  batch sample from all -------
-source("functions/finding_stationary_pair.R")
 
 all_combinations <- as.data.frame(t(combn(top100_crypto$Name, 2)), stringsAsFactors = F)
 dim(all_combinations) # [1] 4950    2
@@ -58,68 +55,94 @@ dim(all_combinations) # [1] 4950    2
 # crypto_list <- smpl_comb_conit$scraped_data
 # saveRDS(crypto_list, "./data/crypto_currencies_data.RDS")
 
-
 # --------------------------------------------------------- all ---------------------------------------------------------------------------
 
-all_combinations_cointegr <- get_cointegration_table(all_combinations, standardize = T, max_obs = 365, crypto_list)
+# calculate cointegration and return lsit of data and table of results
+source("functions/finding_stationary_pair.R")
+# 2 <- cardano    0.1748 |    siacoin   0.3862
 
-all_combinations_cointegr_tb <- all_combinations_cointegr$results
-length(all_combinations_cointegr$scraped_data)
-saveRDS(all_combinations_cointegr_tb, "data/all_combinations_cointegr_365d.RDS")
+# --------------------------------------- LOG PRICES  ------------------------------------------------------------------------------
 
-cointegr_tb <- all_combinations_cointegr_tb
-cointegr_tb <- cointegr_tb[order(cointegr_tb$combin_adf, decreasing = T),]
-cointegr_tb$combin_adf <- as.numeric(as.character(cointegr_tb$combin_adf))
-cointegr_tb_signf2 <- cointegr_tb[cointegr_tb$combin_adf < -3.8 & cointegr_tb$conint_info == "compare combin_adf",]
-dim(cointegr_tb_signf2) # [1] 26 10
-saveRDS(cointegr_tb_signf2, "./data/cointegr_tb_signf2.RDS")
-dim(cointegr_tb_signf2) # [1] 29 10
+# cointegration of log prices
+all_combinations_cointegr3 <- get_cointegration_table(all_combinations, # tabela z kombinacja
+                                                      standardize = F, # no standarization
+                                                      log_prices = T, # logaritmization
+                                                      in_sample = 365, 
+                                                      oo_sample = 15,
+                                                      crypto_list,
+                                                      include_dates = T)
+dim(all_combinations_cointegr3$results)
 
-min(cointegr_tb$combin_adf, na.rm = T)
-hist(cointegr_tb_signf$combin_adf)
+table(all_combinations_cointegr3$results$conint_info)
+# compare combin_adf data not available     not integrated 
+#             1973               2604                373 
 
-#                 n_obs       cc1 cc1_p_adf cc1_diff_p_adf          cc2 cc2_p_adf cc2_diff_p_adf combin_adf   coint_vec        conint_info
-# coint_info.1494   365      tron    0.0722           0.01         qtum    0.2764           0.01  -5.503942 1 0 -0.9496 compare combin_adf
-# coint_info.3284   365     theta    0.5391           0.01  electroneum    0.2158           0.01  -5.425056 1 0 -0.8045 compare combin_adf
-# coint_info.4574   365     quant    0.0893           0.01    flexacoin    0.0707           0.01  -5.258627 1 0 -0.7961 compare combin_adf
-# coint_info.2647   365  dogecoin    0.2137           0.01    flexacoin    0.0707           0.01  -4.770275 1 0 -0.7794 compare combin_adf
-# coint_info.14     365   bitcoin    0.1572           0.01       monero    0.1373           0.01  -4.766124 1 0 -0.9018 compare combin_adf
-# coint_info.3468   365      icon    0.1737           0.01         lisk    0.0967           0.01  -4.642468 1 0 -0.8558 compare combin_adf
-# coint_info.2482   365  ontology    0.0851           0.01         qtum    0.2764           0.01  -4.581125 1 0 -0.9523 compare combin_adf
-# coint_info.4208   365  monacoin    0.3464           0.01 decentraland    0.0547           0.01  -4.521856 1 0 -0.8615 compare combin_adf
-# coint_info.3685   365      lisk    0.0967           0.01     monacoin    0.3464           0.01  -4.474282 1 0 -0.9402 compare combin_adf
-# coint_info.74     365   bitcoin    0.1572           0.01    flexacoin    0.0707           0.01  -4.410615 1 0 -0.7443 compare combin_adf
-# coint_info.1478   365      tron    0.0502           0.01     dogecoin    0.2137           0.01  -4.299848 1 0 -0.8943 compare combin_adf
-# coint_info.2195   365   vechain    0.5119           0.01        augur    0.0556           0.01  -4.267314 1 0 -0.7624 compare combin_adf
-# coint_info.157    365  ethereum    0.2578           0.01     monacoin    0.3464           0.01  -4.215708 1 0 -0.9094 compare combin_adf
-# coint_info.1656   365       neo    0.1738           0.01        augur    0.0556           0.01  -4.132811 1 0 -0.8284 compare combin_adf
-# coint_info.21     365   bitcoin    0.1572           0.01         iota    0.0599           0.01  -4.103743 1 0 -0.7642 compare combin_adf
-# coint_info.1411   365    monero    0.1696           0.01         qtum    0.2764           0.01  -4.050396 1 0 -0.8466 compare combin_adf
-# coint_info.1709   365       neo    0.1738           0.01 decentraland    0.0732           0.01  -4.047336 1 0 -0.8368 compare combin_adf
-# coint_info.3853   230      nano    0.5826           0.01   blockstack    0.0729           0.01  -4.011529 1 0 -0.7757 compare combin_adf
-# coint_info.3015   365   zilliqa    0.8713           0.01      siacoin      0.62           0.01  -3.993849 1 0 -0.7979 compare combin_adf
-# coint_info.2440   365       nem    0.0852           0.01    flexacoin    0.0707           0.01  -3.991425  1 0 -0.721 compare combin_adf
-# coint_info.362    365       xrp    0.1789           0.01        quant    0.0886           0.01  -3.969555 1 0 -0.5848 compare combin_adf
-# coint_info.3479   365      icon    0.1737           0.01     monacoin    0.3464           0.01  -3.961616 1 0 -0.8264 compare combin_adf
-# coint_info.2746   365  digibyte    0.8603           0.01        theta    0.5391           0.01  -3.961285 1 0 -0.7569 compare combin_adf
-# coint_info.319    365       xrp    0.1789           0.01     ontology    0.0851           0.01  -3.915651 1 0 -0.9584 compare combin_adf
-# coint_info.196    365  ethereum    0.2403           0.01 decentraland    0.0732           0.01  -3.893082 1 0 -0.8549 compare combin_adf
-# coint_info.28     365   bitcoin    0.1572           0.01     ontology    0.0739           0.01  -3.847111 1 0 -0.7547 compare combin_adf
-# coint_info.4454   365    status    0.4718           0.01          ren    0.3466           0.01  -3.844885 1 0 -0.6709 compare combin_adf
-# coint_info.901    365   cardano    0.1748           0.01      siacoin    0.3862           0.01  -3.834585 1 0 -0.8827 compare combin_adf
-# coint_info.1241   365 chainlink    0.2983           0.01        augur    0.0556           0.01  -3.813397 1 0 -0.4703 compare combin_adf
+# read saved data
+cointegr_tb3 <- all_combinations_cointegr3$results
 
-crypto_pair <- cryptoPairPlots(crypto_list, cointegr_tb_signf2, n = 28, colerograms = TRUE, diffPlots=FALSE)
-# cointegr_tb_signf2[19,]
-# 13 16 22
-# 16
-# 9
-# 13 <- # NO CAUSALITY   ethereum    monacoin    0.
-# 27 <- # NO CAUSALITY   status    0.4718           0.01          ren
-# 28 <- cardano    0.1748 |    siacoin   0.3862
+# transform to numeric variable
+cointegr_tb3$combin_adf <- as.numeric(as.character(cointegr_tb3$combin_adf))
+
+# order according to value of combin_adf
+cointegr_tb3 <- cointegr_tb3[order(cointegr_tb3$combin_adf, decreasing = T),]
+
+# select only those with highest values
+cointegr_tb_signf3 <- cointegr_tb3[cointegr_tb3$combin_adf < -3.8 & cointegr_tb3$conint_info == "compare combin_adf",]
+
+dim(cointegr_tb_signf3) # [1] 41 12
+# saveRDS(cointegr_tb_signf, "./data/cointegr_tb_signf2.RDS")
+
+cointegr_tb_signf3
+#   first_is    last_is n_obs       cc1 cc1_p_adf cc1_diff_p_adf          cc2 cc2_p_adf cc2_diff_p_adf combin_adf          coint_vec        conint_info
+# 2019-05-31 2020-05-29   365  monacoin    0.0872           0.01         aelf    0.1252           0.01  -3.803662   1 2.7839 -1.0343 compare combin_adf
+# 2019-06-03 2020-06-01   365     verge    0.1317           0.01        quant    0.0873           0.01  -3.818304  1 -4.4194 -0.5065 compare combin_adf
+# 2019-06-03 2020-06-01   365      tron    0.1304           0.01       komodo     0.228           0.01  -3.825258  1 -4.3933 -1.1765 compare combin_adf
+# 2019-05-31 2020-05-29   365      lisk    0.2862           0.01          wax    0.3094           0.01  -3.828249   1 3.3886 -1.1805 compare combin_adf
+# 2019-06-03 2020-06-01   365  dogecoin    0.2845           0.01      siacoin    0.2882           0.01  -3.837151  1 -3.3912 -1.6069 compare combin_adf
+# 2019-06-03 2020-06-01   365   bitcoin    0.1625           0.01     dogecoin    0.2845           0.01  -3.853532  1 13.2943 -0.8046 compare combin_adf
+# 2019-06-03 2020-06-01   365     maker    0.2427           0.01     ontology    0.2851           0.01  -3.868044   1 8.0957 -1.2514 compare combin_adf
+# 2019-06-03 2020-06-01   365      iota    0.3013           0.01        quant    0.0873           0.01  -3.872559  1 -2.5269 -0.6162 compare combin_adf
+# 2019-05-31 2020-05-29   365   cardano    0.2691           0.01 decentraland    0.1686           0.01  -3.874713   1 0.9668 -0.7804 compare combin_adf
+# 2019-06-03 2020-06-01   365 ravencoin    0.2732           0.01        quant    0.0873           0.01  -3.880001  1 -3.3125 -0.4691 compare combin_adf
+# 2019-05-31 2020-05-29   365     quant    0.0922           0.01         aelf    0.1252           0.01  -3.894652   1 3.1761 -0.4373 compare combin_adf
+# 2019-06-03 2020-06-01   365  litecoin    0.4579           0.01    ravencoin    0.2732           0.01  -3.897687   1 7.7395 -1.0178 compare combin_adf
+# 2019-06-03 2020-06-01   365      holo    0.2483           0.01        quant    0.0873           0.01  -3.898169  1 -4.5373 -0.4018 compare combin_adf
+# 2019-06-03 2020-06-01   365  ontology    0.2851           0.01    ravencoin    0.2732           0.01  -3.909383   1 3.1959 -0.9802 compare combin_adf
+# 2019-06-03 2020-06-01   365   stellar    0.1209           0.01      siacoin    0.2882           0.01  -3.910338   1 3.6631 -0.9451 compare combin_adf
+# 2019-06-03 2020-06-01   365    komodo     0.228           0.01        bytom    0.2395           0.01  -3.912311   1 2.1909 -0.7823 compare combin_adf
+# 2019-06-03 2020-06-01   365  dogecoin    0.2845           0.01    flexacoin    0.1546           0.01  -3.914578  1 -4.2631 -1.6869 compare combin_adf
+# 2019-06-03 2020-06-01   365     zcash    0.3843           0.01 decentraland    0.0934           0.01  -3.935548   1 5.6592 -0.5995 compare combin_adf
+# 2019-06-03 2020-06-01   365   bitcoin    0.1625           0.01      stellar    0.1209           0.01  -3.954342  1 13.1892 -1.1531 compare combin_adf
+# 2019-05-31 2020-05-29   365  dogecoin    0.1777           0.01         nano    0.2167           0.01  -3.961021 1 -10.0903 -1.7123 compare combin_adf
+# 2019-05-31 2020-05-29   365     quant    0.0922           0.01 maidsafecoin    0.2774           0.01  -3.968494   1 3.2421 -0.6836 compare combin_adf
+# 2019-05-31 2020-05-29   365      nano    0.2167           0.01        quant    0.0922           0.01  -3.979070  1 -1.7384 -0.6003 compare combin_adf
+# 2019-06-03 2020-06-01   365       neo    0.2485           0.01        augur    0.1124           0.01  -4.009393  1 -0.6661 -0.7628 compare combin_adf
+# 2019-06-03 2020-06-01   365  litecoin    0.4579           0.01   bittorrent    0.2654           0.01  -4.022722  1 13.7095 -1.4548 compare combin_adf
+# 2019-05-31 2020-05-29   365  monacoin    0.0872           0.01 decentraland    0.1686           0.01  -4.051944   1 3.5542 -0.6583 compare combin_adf
+# 2019-05-31 2020-05-29   365      icon    0.3385           0.01         lisk    0.2862           0.01  -4.060641  1 -1.4254 -0.9095 compare combin_adf
+# 2019-06-03 2020-06-01   365    komodo     0.228           0.01        quant    0.0873           0.01  -4.088241  1 -1.8409 -0.5356 compare combin_adf
+# 2019-05-31 2020-05-29   365       xrp    0.3262           0.01    ravencoin     0.262           0.01  -4.166859   1 1.5374 -1.4636 compare combin_adf
+# 2019-06-03 2020-06-01   365  dogecoin    0.2845           0.01        quant    0.0873           0.01  -4.218888  1 -9.9697 -1.3886 compare combin_adf
+# 2019-06-03 2020-06-01   365     quant    0.0873           0.01    bitshares    0.2938           0.01  -4.225558   1 4.7324 -0.6842 compare combin_adf
+# 2019-05-31 2020-05-29   365      icon    0.3385           0.01     monacoin    0.0872           0.01  -4.253992  1 -1.5192 -0.7973 compare combin_adf
+# 2019-06-03 2020-06-01   365   stellar    0.1209           0.01        quant    0.0873           0.01  -4.286871  1 -3.5104 -0.6836 compare combin_adf
+# 2019-06-03 2020-06-01   365     quant    0.0873           0.01   bittorrent    0.2654           0.01  -4.475204    1 9.0323 -0.793 compare combin_adf
+# 2019-06-03 2020-06-01   365   stellar    0.1209           0.01     dogecoin    0.2845           0.01  -4.494921   1 4.5313 -0.5363 compare combin_adf
+# 2019-06-03 2020-06-01   365     quant    0.0873           0.01    flexacoin    0.1546           0.01  -4.559779   1 6.9542 -0.6715 compare combin_adf
+# 2019-05-31 2020-05-29   365  loopring    0.1446           0.01          wax    0.3094           0.01  -4.652268   1 -1.822 -1.5274 compare combin_adf
+# 2019-06-03 2020-06-01   365     verge    0.1317           0.01       komodo     0.228           0.01  -4.712723  1 -5.5264 -1.0757 compare combin_adf
+# 2019-06-03 2020-06-01   365      tron    0.1304           0.01        bytom    0.2395           0.01  -4.748618  1 -1.7843 -1.0535 compare combin_adf
+# 2019-05-31 2020-05-29   365  monacoin    0.0872           0.01     loopring    0.1446           0.01  -5.004075     1 3.6143 -0.77 compare combin_adf
+# 2019-05-31 2020-05-29   365  monacoin    0.0872           0.01        steem    0.1942           0.01  -5.505463   1 1.9835 -0.8978 compare combin_adf
+# 2019-05-31 2020-05-29   365      lisk    0.2862           0.01     monacoin    0.0872           0.01  -5.753957  1 -0.2701 -0.8671 compare combin_adf
 
 
-# coint_info.901    365   cardano    0.1748           0.01      siacoin    0.3862           0.01  -3.834585 1 0 -0.8827 compare combin_adf
+
+
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+
 names_ <- names(crypto_pair)
 combination_fornula <- as.formula(paste(names_[2], names_[1], sep="~"))
 combination_fornula_inv <- as.formula(paste(names_[1], names_[2], sep="~"))

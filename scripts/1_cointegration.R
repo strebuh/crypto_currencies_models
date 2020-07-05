@@ -32,9 +32,9 @@ if(0){
                                                        johansen = TRUE
                                                        ) 
   
-  saveRDS(all_combinations_cointegr, "./data/all_combinations_2coint_2.RDS")
+  saveRDS(all_combinations_cointegr, "./data/all_combinations_coint_2.RDS")
 }
-all_combinations_cointegr <- readRDS("./data/all_combinations_2coint_2.RDS")
+all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
 
 # look in structure of resluts
 table(all_combinations_cointegr$results$conint_info)
