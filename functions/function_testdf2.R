@@ -2,11 +2,6 @@ require(fUnitRoots)
 require(lmtest)
 
 
-# order<-1
-# max.order<-5
-# variable<-SP500$SP500
-# max.augmentations<-1
-# augmentations<-0
 testdf <- function(variable, max.augmentations, max.order)
 	{
 	results_adf <- NULL
