@@ -54,7 +54,7 @@ The pair that was chosen for modeling and forecasting was **bitcoin-dogecoin**.
 
 
 
-![log_c1_acf_pacf](./img/log_c1_acf_pacf.png)
+
 
 ![log_c2_acf_pacf](./img/log_c2_acf_pacf.png)
 
@@ -66,11 +66,39 @@ The pair that was chosen for modeling and forecasting was **bitcoin-dogecoin**.
 
 ## ECM
 
-Error Correction model was computed
+Error Correction model of these two cointegrated series.
+
+Linear combination of these two series is expressed by following relation:
+
+![l_comb_fomula](.\img\l_comb_fomula.PNG)
+
+
+
+Linear combination model summary coefficients are significant (both log_bitcoin and intercept). They denote the long-run relationship between these two and shape the cointegrating vector. 
+
+Cointegrating vector is [1, - 13.294229, -0.80464]. It can be interpreted as follows, if bitcoin log prices of increase by 1 percentage point, log prices increase by  ~0.8 percentage point.
+
+![l_comb_summary](.\img\l_comb_summary.PNG)
 
  
 
+Short run relationship is defined by parameters of ECM equation, which if shaped by following equation, where **lresid** basically corresponds to linear combination residuals:
+
+![ecm1](.\img\ecm1.PNG)
+
+The summary of the ECM model provides parameters that inform about short-run relationship and adjustment coefficient. Intercept is not significant. The diff_log_bitcoin parameter informs that if bitcoin log price increases by 1 unit, log price of dogecoin increases by ~0.645 units. The adjustment coefficient (lresid estimated coefficient) is negative which is consistent with expectations. It's value around 5% means that an unexpected error should be offset within 20 days, which is relatively long time.
+
+![ecm2](.\img\ecm2.PNG)
 
 
- 
+
+
+
+
+
+### ARIMA
+
+ACF and PACF correlograms of differenced bitcoing log prices, does not seem to indicate at either pure AR process (ACF doesn't drop slowly and PACF doesn't drop abruptly) or pure MA process (ACF doesn't drop abruptly, and PACF doesn't drop slowly). The exact number of sufficient lags cannot be deducted from it. It however may give some general indication, where, how long one can try. Here lags 1, 4, maybe 2 could be considered at first.
+
+ ![log_c1_acf_pacf](./img/log_c1_acf_pacf.png)
 
