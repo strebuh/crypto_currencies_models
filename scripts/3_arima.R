@@ -286,7 +286,7 @@ plot(c1_data_forecast[(nrow(c1_data_forecast)-30):nrow(c1_data_forecast),],
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = "7 day forecast of bitcoin",
+     main = "7 days ARIMA forecast of bitcoin",
      col = c("black", "blue", "red", "red"))
 
 # real values and forecast, last 7 observations
@@ -542,8 +542,6 @@ dim(crypto_pair_all)
 c2_data_forecast <- merge(crypto_pair_all[,2], c2.arima.forecast_df)
 dim(c2_data_forecast)
 
-names(c2_data_forecast)
-
 # revert log prices to prices
 c2_data_forecast_ <- lapply(c2_data_forecast, function(x) exp(x[!is.na(x)]))
 
@@ -558,11 +556,13 @@ plot(c2_data_forecast[(nrow(c2_data_forecast)-30):nrow(c2_data_forecast),],
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = "7 day forecast of dogecoin",
+     main = "7 days ARIMA forecast of dogecoin",
      col = c("black", "blue", "red", "red"))
 
 # real values and forecast, last 7 observations
 c2.arima.forecast_df <- tail(c2_data_forecast, 7)
+
+names(c2.arima.forecast_df)
 
 # finally we can calculate popular measures of ex-post prediction errors
 c2.arima.forecast_df$mae   <-  abs(c2.arima.forecast_df$dogecoin - c2.arima.forecast_df$dogecoin_fore)

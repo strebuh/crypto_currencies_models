@@ -20,7 +20,6 @@ source("functions/finding_stationary_pair.R")
 crypto_pair_oos <- crypto_pair_all$oo_smpl
 
 
-names(crypto_pair)
 # ------------------------------------------------- VAR MODEL ------------------------------------------------------------------------------
 # selection without seasons
 VARselect(crypto_pair[,1:2], 
@@ -42,11 +41,11 @@ VARselect(crypto_pair[,1:2],
 
 # -------------------------------------------------------------------------------------------------------------------------------
 # VAR model with 7 lags and seasons
-crypto_pair.var2s <- VAR(crypto_pair[,1:2],
+crypto_pair.VAR.s <- VAR(crypto_pair[,1:2],
                          p = 2,
                          season = 7) 
 
-summary(crypto_pair.var2s) ## you rarely interpet interpret ## ~44:00
+summary(crypto_pair.VAR.s) ## you rarely interpet interpret ## ~44:00
 # seasons are not significant
 
 #--------------------
@@ -55,11 +54,11 @@ summary(crypto_pair.var2s) ## you rarely interpet interpret ## ~44:00
 # 
 # Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1   0.788461   0.080761   9.763  < 2e-16 ***
-#   log_dogecoin.l1  0.133845   0.094954   1.410  0.15955    
+# log_dogecoin.l1  0.133845   0.094954   1.410  0.15955    
 # log_bitcoin.l2   0.135580   0.079798   1.699  0.09020 .  
 # log_dogecoin.l2 -0.075250   0.094041  -0.800  0.42415    
 # const            1.041229   0.377498   2.758  0.00611 ** 
-#   sd1              0.013514   0.008668   1.559  0.11987    
+# sd1              0.013514   0.008668   1.559  0.11987    
 # sd2              0.005757   0.008725   0.660  0.50982    
 # sd3              0.013310   0.008674   1.534  0.12582    
 # sd4              0.001965   0.008681   0.226  0.82101    
@@ -70,9 +69,9 @@ summary(crypto_pair.var2s) ## you rarely interpet interpret ## ~44:00
 # 
 # Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1  -0.165469   0.067870  -2.438   0.0153 *  
-#   log_dogecoin.l1  0.981616   0.079797  12.301   <2e-16 ***
-#   log_bitcoin.l2   0.151317   0.067061   2.256   0.0247 *  
-#   log_dogecoin.l2  0.008418   0.079030   0.107   0.9152    
+# log_dogecoin.l1  0.981616   0.079797  12.301   <2e-16 ***
+# log_bitcoin.l2   0.151317   0.067061   2.256   0.0247 *  
+# log_dogecoin.l2  0.008418   0.079030   0.107   0.9152    
 # const            0.068276   0.317241   0.215   0.8297    
 # sd1              0.001069   0.007284   0.147   0.8834    
 # sd2             -0.003817   0.007333  -0.521   0.6030    
@@ -86,15 +85,15 @@ summary(crypto_pair.var2s) ## you rarely interpet interpret ## ~44:00
 # BIC(crypto_pair.var2, crypto_pair.var2s)
 # -------------------------------------------------------------------------------------------------------------------------------
 # model without seasonality component
-crypto_pair.var2 <- VAR(crypto_pair[,1:2], 
+crypto_pair.VAR <- VAR(crypto_pair[,1:2], 
                         p = 2)
 
-summary(crypto_pair.var2)
+summary(crypto_pair.VAR)
 # log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const 
 # 
 # Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1   0.77934    0.07993   9.750  < 2e-16 ***
-#   log_dogecoin.l1  0.13046    0.09373   1.392  0.16482    
+# log_dogecoin.l1  0.13046    0.09373   1.392  0.16482    
 # log_bitcoin.l2   0.14408    0.07895   1.825  0.06884 .  
 # log_dogecoin.l2 -0.07137    0.09279  -0.769  0.44233    
 # const            1.04993    0.37721   2.783  0.00566 ** 
@@ -105,30 +104,37 @@ summary(crypto_pair.var2)
 # 
 # Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1  -0.176360   0.067228  -2.623  0.00908 ** 
-#   log_dogecoin.l1  0.985004   0.078834  12.495  < 2e-16 ***
-#   log_bitcoin.l2   0.162923   0.066403   2.454  0.01462 *  
-#   log_dogecoin.l2  0.004235   0.078043   0.054  0.95675    
+# log_dogecoin.l1  0.985004   0.078834  12.495  < 2e-16 ***
+# log_bitcoin.l2   0.162923   0.066403   2.454  0.01462 *  
+# log_dogecoin.l2  0.004235   0.078043   0.054  0.95675    
 # const            0.057055   0.317262   0.180  0.85738  
   
 
-serial.test(crypto_pair.var2) ## 57:00+
+serial.test(crypto_pair.VAR) ## 57:00+
 # data:  Residuals of VAR object crypto_pair.var2
 # Chi-squared = 73.469, df = 56, p-value = 0.05864
 
-serial.test(crypto_pair.var2, type = "BG") # The null hypothesis is that there is no serial correlation of any order up to p.
+serial.test(crypto_pair.VAR, type = "BG") # The null hypothesis is that there is no serial correlation of any order up to p.
 # data:  Residuals of VAR object crypto_pair.var2
 # Chi-squared = 18.8, df = 20, p-value = 0.5348
 
 
 # lets do some basic diagnostics
-plot(crypto_pair.var2)
+plot(crypto_pair.VAR)
 # no autocorrelation
 
 # ------------------ restricted VAR 1
 # automatic restriction, based on first model with seasonality
-restrict(crypto_pair.var2s, method = "ser")
-# log_litecoin = log_litecoin.l1 + log_bittorrent.l1 + log_bittorrent.l2 + log_bittorrent.l4 + log_litecoin.l5
-# log_bittorrent = log_bittorrent.l1 + log_litecoin.l4 + log_litecoin.l5 
+restrict(crypto_pair.VAR.s, method = "ser")
+# Estimate Std. Error t value Pr(>|t|)    
+# log_bitcoin.l1  -0.176360   0.067228  -2.623  0.00908 ** 
+# log_dogecoin.l1  0.985004   0.078834  12.495  < 2e-16 ***
+# log_bitcoin.l2   0.162923   0.066403   2.454  0.01462 *  
+# log_dogecoin.l2  0.004235   0.078043   0.054  0.95675    
+# const            0.057055   0.317262   0.180  0.85738   
+
+# log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const 
+# log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const
 # restrict <- matrix(c(1, 1, 1, 1, 1, 1, 1,
 #                      1, 0, 1, 0, 0, 1, 0),
 #                    nrow=2, ncol=7, byrow=TRUE)
@@ -154,8 +160,8 @@ restrict1 <- matrix(c(1, 0, 1, 0, 1, # dep log_bitcoin
                       1, 1, 1, 0, 0), # dep-log_dogecoin 
                    nrow=2, ncol=5, byrow=TRUE) # only GC
 
-crypto_pair.var2_restr1 <- restrict(crypto_pair.var2, method = "man", resmat = restrict1)
-summary(crypto_pair.var2_restr1)
+crypto_pair.VAR.restr1 <- restrict(crypto_pair.VAR, method = "man", resmat = restrict1)
+summary(crypto_pair.VAR.restr1)
 # log_bitcoin = log_bitcoin.l1 + log_bitcoin.l2 + const 
 # 
 # Estimate Std. Error t value Pr(>|t|)    
@@ -170,14 +176,14 @@ summary(crypto_pair.var2_restr1)
 #   log_dogecoin.l1  0.985408   0.007259 135.749  < 2e-16 ***
 #   log_bitcoin.l2   0.165813   0.043804   3.785  0.00018 ***
 
-serial.test(crypto_pair.var2_restr1, type = "BG") 
+serial.test(crypto_pair.VAR.restr1, type = "BG") 
 # data:  Residuals of VAR object crypto_pair.var2_restr1
 # Chi-squared = 23.937, df = 20, p-value = 0.2451
-serial.test(crypto_pair.var2_restr1) 
+serial.test(crypto_pair.VAR.restr1) 
 # data:  Residuals of VAR object crypto_pair.var2_restr1
 # Chi-squared = 80.553, df = 56, p-value = 0.01748
 
-plot(crypto_pair.var2_restr1)
+plot(crypto_pair.VAR.restr1)
 # although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
 
 
@@ -242,91 +248,110 @@ plot(crypto_pair.var2_restr1)
 # # although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
-AIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
-BIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
+AIC(crypto_pair.VAR.s, crypto_pair.VAR, crypto_pair.VAR.restr1)
+BIC(crypto_pair.VAR.s, crypto_pair.VAR, crypto_pair.VAR.restr1)
 # > AIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
 # df       AIC
 # crypto_pair.var2s       22 -2880.934
-# crypto_pair.var2        10 -2889.614
+# crypto_pair.var2        10 -2889.614 <- 
 # crypto_pair.var2_restr1  6 -2885.135
 # > BIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
 # df       BIC
 # crypto_pair.var2s       22 -2795.257
 # crypto_pair.var2        10 -2850.670
-# crypto_pair.var2_restr1  6 -2861.768
+# crypto_pair.var2_restr1  6 -2861.768 <- 
 
 # AIC prefere the most restricted model, BIC the leastwhich makes sense, however due to correlation in residuals
 
 #----------------------------------------------------------------- FORECAST -------------------------------------------------------------------
 
 # and run a forecast
-crypto_pair.var2.forecast <- predict(crypto_pair.var2,
+crypto_pair.VAR.forecast <- predict(crypto_pair.VAR,
                                      n.ahead = 7,
                                      ci = 0.95) 
 
-names(crypto_pair.var2.forecast)
+names(crypto_pair.VAR.forecast)
 # [1] "fcst"     "endog"    "model"    "exo.fcst"
 
 # VAR forecasts for both currencies
-crypto_pair.var2.forecast$fcst$log_bitcoin
-crypto_pair.var2.forecast$fcst$log_dogecoin
-
-dim(crypto_pair_oos)
-head(crypto_pair_oos)
-c1_forecast_VAR <- xts(crypto_pair.var2.forecast$fcst$log_bitcoin[,-4], 
-                        head(index(crypto_pair_oos), 7))
-# lets change the names 
-names(c1_forecast_VAR) <- c(paste0(names_[1],"_fore_VAR"), paste0(names_[1],"_lower_VAR"), paste0(names_[1],"_upper_VAR"))
-
-# lets do the same for cpi forecasts 
-c2_forecast_VAR <- xts(crypto_pair.var2.forecast$fcst$log_dogecoin[,-4], 
-                       head(index(crypto_pair_oos), 7))
-names(c2_forecast_VAR) <- c(paste0(names_[2],"_fore_VAR"), paste0(names_[2],"_lower_VAR"), paste0(names_[2],"_upper_VAR"))
+crypto_pair.VAR.forecast$fcst$log_bitcoin
+crypto_pair.VAR.forecast$fcst$log_dogecoin
 
 # add oos observations
-crypto_pair_all_ <- rbind(crypto_pair[,-ncol(crypto_pair)], head(crypto_pair_oos, 7))
-tail(crypto_pair_all, 20)
+crypto_pair_all <- rbind(crypto_pair[,1:4], head(crypto_pair_oos, 7))
+dim(crypto_pair_all)
+
+# --------- BITTORRENT -------
+c1_VAR.forecast <- xts(crypto_pair.VAR.forecast$fcst$log_bitcoin[,-4], 
+                        head(index(crypto_pair_oos), 7))
+
+# lets change the names 
+names(c1_VAR.forecast) <- c(paste0(names_[1],"_fore_VAR"), paste0(names_[1],"_lower_VAR"), paste0(names_[1],"_upper_VAR"))
+
+# --------- DOGECOIN -------
+
+# lets do the same for cpi forecasts 
+c2_VAR.forecast <- xts(crypto_pair.VAR.forecast$fcst$log_dogecoin[,-4], 
+                       head(index(crypto_pair_oos), 7))
+names(c2_VAR.forecast) <- c(paste0(names_[2],"_fore_VAR"), paste0(names_[2],"_lower_VAR"), paste0(names_[2],"_upper_VAR"))
+
+
 
 # lets put the data together
-crypto_pair_VAR <- merge(crypto_pair_all_,
-                     c1_forecast_VAR,
-                     c2_forecast_VAR)
-names(crypto_pair_VAR)
-# [1] "log_bitcoin"            "log_dogecoin"           "diff_log_bitcoin"       "diff_log_dogecoin"      "log_bitcoin_fore_VAR"   "log_bitcoin_lower_VAR" 
-# [7] "log_bitcoin_upper_VAR"  "log_dogecoin_fore_VAR"  "log_dogecoin_lower_VAR" "log_dogecoin_upper_VAR"
+crypto_pair_VAR <- merge(crypto_pair_all[,1:2],
+                         c1_VAR.forecast,
+                         c2_VAR.forecast)
 
-plot(crypto_pair_VAR[(nrow(crypto_pair_VAR)-30):nrow(crypto_pair_VAR), grep("^log_bitcoin", names(crypto_pair_VAR))], 
+
+# revert log prices to prices
+crypto_pair_VAR_data_forecast_ <- lapply(crypto_pair_VAR, function(x) exp(x[!is.na(x)]))
+
+
+crypto_pair_VAR_data_forecast <- crypto_pair_VAR_data_forecast_[[1]]
+for(i in names(crypto_pair_VAR_data_forecast_)[-1]){
+  crypto_pair_VAR_data_forecast <- merge(crypto_pair_VAR_data_forecast, crypto_pair_VAR_data_forecast_[[i]])
+}
+names(crypto_pair_VAR_data_forecast) <- c(gsub("log_","", names(crypto_pair_VAR)))
+
+
+plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow(crypto_pair_VAR_data_forecast), 
+                                   grep("^bitcoin", names(crypto_pair_VAR_data_forecast))], 
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = paste0("7 days forecast of ", names(crypto_pair_VAR))[1],
+     main = paste0("7 days VAR forecast of ", names(crypto_pair_VAR_data_forecast))[1],
      col = c("black", "blue", "red", "red"))
 
-plot(crypto_pair_VAR[(nrow(crypto_pair_VAR)-30):nrow(crypto_pair_VAR), grep("^log_dogecoin", names(crypto_pair_VAR))], 
+plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow(crypto_pair_VAR_data_forecast), 
+                     grep("^dogecoin", names(crypto_pair_VAR_data_forecast))], 
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = paste0("7 days forecast of ", names(crypto_pair_VAR))[2],
+     main = paste0("7 days VAR forecast of ", names(crypto_pair_VAR_data_forecast))[2],
      col = c("black", "blue", "red", "red"))
+
+# real values and forecast, last 7 observations
+crypto_pair_VAR <- tail(crypto_pair_VAR_data_forecast, 7)
 
 # errors
-crypto_pair_VAR$mae.log_bitcoin   <-  abs(crypto_pair_VAR$log_bitcoin - crypto_pair_VAR$log_bitcoin_fore)
-crypto_pair_VAR$mse.log_bitcoin <-  (crypto_pair_VAR$log_bitcoin - crypto_pair_VAR$log_bitcoin_fore)^2
-crypto_pair_VAR$mape.log_bitcoin  <-  abs((crypto_pair_VAR$log_bitcoin - crypto_pair_VAR$log_bitcoin_fore)/crypto_pair_VAR$log_bitcoin)
-crypto_pair_VAR$amape.log_bitcoin <-  abs((crypto_pair_VAR$log_bitcoin - crypto_pair_VAR$log_bitcoin_fore) / 
-                                    (crypto_pair_VAR$log_bitcoin + crypto_pair_VAR$log_bitcoin_fore))
+crypto_pair_VAR$mae.bitcoin   <-  abs(crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)
+crypto_pair_VAR$mse.bitcoin <-  (crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)^2
+crypto_pair_VAR$mape.bitcoin  <-  abs((crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)/crypto_pair_VAR$bitcoin)
+crypto_pair_VAR$amape.bitcoin <-  abs((crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore) / 
+                                    (crypto_pair_VAR$bitcoin + crypto_pair_VAR$bitcoin_fore))
 
-crypto_pair_VAR$mae.log_dogecoin   <-  abs(crypto_pair_VAR$log_dogecoin - crypto_pair_VAR$log_dogecoin_fore)
-crypto_pair_VAR$mse.log_dogecoin   <-  (crypto_pair_VAR$log_dogecoin - crypto_pair_VAR$log_dogecoin_fore)^2
-crypto_pair_VAR$mape.log_dogecoin  <-  abs((crypto_pair_VAR$log_dogecoin - crypto_pair_VAR$log_dogecoin_fore)/crypto_pair_VAR$log_dogecoin)
-crypto_pair_VAR$amape.log_dogecoin <-  abs((crypto_pair_VAR$log_dogecoin - crypto_pair_VAR$log_dogecoin_fore) / 
-                                    (crypto_pair_VAR$log_dogecoin + crypto_pair_VAR$log_dogecoin_fore))
+crypto_pair_VAR$mae.dogecoin   <-  abs(crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)
+crypto_pair_VAR$mse.dogecoin   <-  (crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)^2
+crypto_pair_VAR$mape.dogecoin  <-  abs((crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)/crypto_pair_VAR$dogecoin)
+crypto_pair_VAR$amape.dogecoin <-  abs((crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore) / 
+                                    (crypto_pair_VAR$dogecoin + crypto_pair_VAR$dogecoin_fore))
+
+names(crypto_pair_VAR)
 
 # get measures
-colMeans(crypto_pair_VAR[,11:18], na.rm = TRUE)
-# mae.log_bitcoin    mse.log_bitcoin   mape.log_bitcoin  amape.log_bitcoin   mae.log_dogecoin   mse.log_dogecoin  mape.log_dogecoin amape.log_dogecoin 
-# 1.874606e-02       5.768773e-04       2.043729e-03       1.020211e-03       7.054705e-03       8.200357e-05       1.184335e-03       5.924479e-04 
-
+colMeans(crypto_pair_VAR[,grepl("mae|mse|mape|amape", names(crypto_pair_VAR))], na.rm = TRUE)
+# mae.bitcoin    mse.bitcoin   mape.bitcoin  amape.bitcoin   mae.dogecoin   mse.dogecoin  mape.dogecoin amape.dogecoin 
+# 1.832093e+02   5.512044e+04   1.902838e-02   9.372086e-03   1.831285e-05   5.515529e-10   7.074903e-03   3.527304e-03 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------- VECM ----------------------------------------------------------------------------------
