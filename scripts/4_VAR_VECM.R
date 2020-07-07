@@ -290,22 +290,19 @@ names(c1_VAR.forecast) <- c(paste0(names_[1],"_fore_VAR"), paste0(names_[1],"_lo
 
 # --------- DOGECOIN -------
 
-# lets do the same for cpi forecasts 
+# VAR forecasts
 c2_VAR.forecast <- xts(crypto_pair.VAR.forecast$fcst$log_dogecoin[,-4], 
                        head(index(crypto_pair_oos), 7))
 names(c2_VAR.forecast) <- c(paste0(names_[2],"_fore_VAR"), paste0(names_[2],"_lower_VAR"), paste0(names_[2],"_upper_VAR"))
 
 
-
-# lets put the data together
+# put the data together
 crypto_pair_VAR <- merge(crypto_pair_all[,1:2],
                          c1_VAR.forecast,
                          c2_VAR.forecast)
 
-
 # revert log prices to prices
 crypto_pair_VAR_data_forecast_ <- lapply(crypto_pair_VAR, function(x) exp(x[!is.na(x)]))
-
 
 crypto_pair_VAR_data_forecast <- crypto_pair_VAR_data_forecast_[[1]]
 for(i in names(crypto_pair_VAR_data_forecast_)[-1]){
@@ -314,6 +311,7 @@ for(i in names(crypto_pair_VAR_data_forecast_)[-1]){
 names(crypto_pair_VAR_data_forecast) <- c(gsub("log_","", names(crypto_pair_VAR)))
 
 
+# plot 30 last days including forecast - bitcoint
 plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow(crypto_pair_VAR_data_forecast), 
                                    grep("^bitcoin", names(crypto_pair_VAR_data_forecast))], 
      major.ticks = "years", 
@@ -322,6 +320,7 @@ plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow
      main = paste0("7 days VAR forecast of ", names(crypto_pair_VAR_data_forecast))[1],
      col = c("black", "blue", "red", "red"))
 
+# plot 30 last days including forecast - dogecoin
 plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow(crypto_pair_VAR_data_forecast), 
                      grep("^dogecoin", names(crypto_pair_VAR_data_forecast))], 
      major.ticks = "years", 
@@ -330,23 +329,23 @@ plot(crypto_pair_VAR_data_forecast[(nrow(crypto_pair_VAR_data_forecast)-30):nrow
      main = paste0("7 days VAR forecast of ", names(crypto_pair_VAR_data_forecast))[2],
      col = c("black", "blue", "red", "red"))
 
+
 # real values and forecast, last 7 observations
 crypto_pair_VAR <- tail(crypto_pair_VAR_data_forecast, 7)
 
-# errors
+
+# errors bitcoin
 crypto_pair_VAR$mae.bitcoin   <-  abs(crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)
 crypto_pair_VAR$mse.bitcoin <-  (crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)^2
 crypto_pair_VAR$mape.bitcoin  <-  abs((crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore)/crypto_pair_VAR$bitcoin)
 crypto_pair_VAR$amape.bitcoin <-  abs((crypto_pair_VAR$bitcoin - crypto_pair_VAR$bitcoin_fore) / 
                                     (crypto_pair_VAR$bitcoin + crypto_pair_VAR$bitcoin_fore))
-
+# errors dogecoin
 crypto_pair_VAR$mae.dogecoin   <-  abs(crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)
 crypto_pair_VAR$mse.dogecoin   <-  (crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)^2
 crypto_pair_VAR$mape.dogecoin  <-  abs((crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore)/crypto_pair_VAR$dogecoin)
 crypto_pair_VAR$amape.dogecoin <-  abs((crypto_pair_VAR$dogecoin - crypto_pair_VAR$dogecoin_fore) / 
                                     (crypto_pair_VAR$dogecoin + crypto_pair_VAR$dogecoin_fore))
-
-names(crypto_pair_VAR)
 
 # get measures
 colMeans(crypto_pair_VAR[,grepl("mae|mse|mape|amape", names(crypto_pair_VAR))], na.rm = TRUE)
@@ -357,21 +356,21 @@ colMeans(crypto_pair_VAR[,grepl("mae|mse|mape|amape", names(crypto_pair_VAR))], 
 # ---------------------------------------------------------------- VECM ----------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# head(crypto_pair[,1:2])
+# johansen test
 johan.test.trace <- ca.jo(crypto_pair[,1:2],         
-                          ecdet = "const", # "none", "const", "trend"
+                          ecdet = "const",
                           type = "trace",  
-                          K = 2) 
-                         #  ,        
-                         # season = 7)
+                          K = 2 # taken from VARselect
+                          ) 
 
 summary(johan.test.trace) 
 #           test 10pct  5pct  1pct
 # r <= 1 |  4.13  7.52  9.24 12.97
 # r = 0  | 20.80 17.85 19.96 24.60
+# rank 0 rejected, rank <=1 not rejected, so one cointegrationg vector
 
 # https://www.researchgate.net/post/2_variables_and_2_cointegrating_equations_can_anyone_help_me2
-johan.test.eigen <- ca.jo(crypto_pair[,1:2],         # data 
+johan.test.eigen <- ca.jo(crypto_pair[,1:2],        
                           ecdet = "const", 
                           type = "eigen",  
                           K = 2) 
@@ -379,17 +378,31 @@ summary(johan.test.eigen)
 #           test 10pct  5pct  1pct
 # r <= 1 |  4.13  7.52  9.24 12.97
 # r = 0  | 16.68 13.75 15.67 20.20
+# results similar to previous test
 
 get_pair_plot2(crypto_pair[,1:2], # dataframe or xts
                            # log_price = F, 
                            standardize = T,
-                           ggplot = F
+                           ggplot = T
 )
  
 #-------------------------------------- model ------------------------------------------------------------------------------
 crypto_pair.vecm.1 <- cajorls(johan.test.eigen, r = 1) 
 
 summary(crypto_pair.vecm.1$rlm)
+# lm(formula = log_bitcoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 
+#      1, data = data.mat)
+#                   Estimate Std. Error t value Pr(>|t|)   
+# ect1             -0.06459    0.02392  -2.700  0.00725 **
+#   log_bitcoin.dl1  -0.22099    0.07996  -2.764  0.00601 **
+#   log_dogecoin.dl1  0.14323    0.09339   1.534  0.12599 
+
+# lm(formula = log_dogecoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 
+#      1, data = data.mat)
+# Estimate Std. Error t value Pr(>|t|)   
+# ect1             -2.894e-05  2.017e-02  -0.001  0.99886   
+# log_bitcoin.dl1  -1.767e-01  6.742e-02  -2.621  0.00913 **
+#   log_dogecoin.dl1 -7.213e-04  7.874e-02  -0.009  0.99270 
 
 # estimates of the VECM model
 crypto_pair.vecm.1$beta
@@ -440,72 +453,88 @@ normality.test(crypto_pair.vecm.1.asVAR)
 # and run a forecast
 crypto_pair.vecm.1.asVAR.forecast <- predict(crypto_pair.vecm.1.asVAR,
                                              n.ahead = 7,
-                                             ci = 0.95) # 95% confidence interval
+                                             ci = 0.95)
 
-# lets see the result
-crypto_pair.vecm.1.asVAR.forecast
-names(crypto_pair.vecm.1.asVAR.forecast)
-# [1] "fcst"     "endog"    "model"    "exo.fcst"
-# str(crypto_pair.vecm.1.asVAR.forecast)
+# # lets see the result
+# crypto_pair.vecm.1.asVAR.forecast
+# names(crypto_pair.vecm.1.asVAR.forecast)
+# # [1] "fcst"     "endog"    "model"    "exo.fcst"
+# # str(crypto_pair.vecm.1.asVAR.forecast)
+# 
+# # VAR forecasts for both currencies
+# crypto_pair.vecm.1.asVAR.forecast$fcst$log_bitcoin
+# crypto_pair.vecm.1.asVAR.forecast$fcst$log_dogecoin
 
 
-# VAR forecasts for both currencies
-crypto_pair.vecm.1.asVAR.forecast$fcst$log_bitcoin
-crypto_pair.vecm.1.asVAR.forecast$fcst$log_dogecoin
-
-
-head(crypto_pair_oos)
-c1_forecast.VECM <- xts(crypto_pair.vecm.1.asVAR.forecast$fcst$log_bitcoin[,-4], 
+c1_VECM.forecast <- xts(crypto_pair.vecm.1.asVAR.forecast$fcst$log_bitcoin[,-4], 
                         head(index(crypto_pair_oos), 7))
-names(c1_forecast.VECM) <- c(paste0(names_[1],"_fore_VAR"), paste0(names_[1],"_lower_VAR"), paste0(names_[1],"_upper_VAR"))
+names(c1_VECM.forecast) <- c(paste0(names_[1],"_fore_VAR"), paste0(names_[1],"_lower_VAR"), paste0(names_[1],"_upper_VAR"))
 
-# lets do the same for cpi forecasts 
-c2_forecast.VECM <- xts(crypto_pair.vecm.1.asVAR.forecast$fcst$log_dogecoin[,-4], 
+# dogecoin forecasts 
+c2_VECM.forecast <- xts(crypto_pair.vecm.1.asVAR.forecast$fcst$log_dogecoin[,-4], 
                         head(index(crypto_pair_oos), 7))
-names(c2_forecast.VECM) <- c(paste0(names_[2],"_fore_VAR"), paste0(names_[2],"_lower_VAR"), paste0(names_[2],"_upper_VAR"))
+names(c2_VECM.forecast) <- c(paste0(names_[2],"_fore_VAR"), paste0(names_[2],"_lower_VAR"), paste0(names_[2],"_upper_VAR"))
 
-# add oos observations
-crypto_pair_all_ <- rbind(crypto_pair[,-ncol(crypto_pair)], head(crypto_pair_oos, 7))
+# # add oos observations
+# crypto_pair_all_ <- rbind(crypto_pair[,-ncol(crypto_pair)], head(crypto_pair_oos, 7))
 
 # lets put the data together
-crypto_pair_VECM <- merge(crypto_pair_all_,
-                         c1_forecast.VECM,
-                         c2_forecast.VECM)
+crypto_pair_VECM <- merge(crypto_pair_all[,1:2],
+                          c1_VECM.forecast,
+                          c2_VECM.forecast)
 
 
-plot(crypto_pair_VECM[(nrow(crypto_pair_VECM)-30):nrow(crypto_pair_VECM), grep("^log_bitcoin", names(crypto_pair_VECM))], 
+# revert log prices to prices
+crypto_pair_VECM_data_forecast_ <- lapply(crypto_pair_VECM, function(x) exp(x[!is.na(x)]))
+
+crypto_pair_VECM_data_forecast <- crypto_pair_VECM_data_forecast_[[1]]
+for(i in names(crypto_pair_VECM_data_forecast_)[-1]){
+  crypto_pair_VECM_data_forecast <- merge(crypto_pair_VECM_data_forecast, crypto_pair_VECM_data_forecast_[[i]])
+}
+names(crypto_pair_VECM_data_forecast) <- c(gsub("log_","", names(crypto_pair_VECM_data_forecast)))
+
+
+# plot 30 last days including forecast - bitcoint
+plot(crypto_pair_VECM_data_forecast[(nrow(crypto_pair_VECM_data_forecast)-30):nrow(crypto_pair_VECM_data_forecast), 
+                                   grep("^bitcoin", names(crypto_pair_VECM_data_forecast))], 
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = paste0("7 days forecast of ", names(crypto_pair_VECM))[1],
+     main = paste0("7 days VECM forecast of ", names(crypto_pair_VECM_data_forecast))[1],
      col = c("black", "blue", "red", "red"))
 
-plot(crypto_pair_VECM[(nrow(crypto_pair_VECM)-30):nrow(crypto_pair_VECM), grep("^log_dogecoin", names(crypto_pair_VECM))], 
+# plot 30 last days including forecast - dogecoin
+plot(crypto_pair_VECM_data_forecast[(nrow(crypto_pair_VECM_data_forecast)-30):nrow(crypto_pair_VECM_data_forecast), 
+                                   grep("^dogecoin", names(crypto_pair_VECM_data_forecast))], 
      major.ticks = "years", 
      grid.ticks.on = "years",
      grid.ticks.lty = 3,
-     main = paste0("7 days forecast of ", names(crypto_pair_VECM))[2],
+     main = paste0("7 days VECM forecast of ", names(crypto_pair_VECM_data_forecast))[2],
      col = c("black", "blue", "red", "red"))
 
-# errors
-crypto_pair_VECM$mae.log_bitcoin   <-  abs(crypto_pair_VECM$log_bitcoin - crypto_pair_VECM$log_bitcoin_fore)
-crypto_pair_VECM$mse.log_bitcoin <-  (crypto_pair_VECM$log_bitcoin - crypto_pair_VECM$log_bitcoin_fore)^2
-crypto_pair_VECM$mape.log_bitcoin  <-  abs((crypto_pair_VECM$log_bitcoin - crypto_pair_VECM$log_bitcoin_fore)/crypto_pair_VECM$log_bitcoin)
-crypto_pair_VECM$amape.log_bitcoin <-  abs((crypto_pair_VECM$log_bitcoin - crypto_pair_VECM$log_bitcoin_fore) / 
-                                            (crypto_pair_VECM$log_bitcoin + crypto_pair_VECM$log_bitcoin_fore))
 
-crypto_pair_VECM$mae.log_dogecoin   <-  abs(crypto_pair_VECM$log_dogecoin - crypto_pair_VECM$log_dogecoin_fore)
-crypto_pair_VECM$mse.log_dogecoin   <-  (crypto_pair_VECM$log_dogecoin - crypto_pair_VECM$log_dogecoin_fore)^2
-crypto_pair_VECM$mape.log_dogecoin  <-  abs((crypto_pair_VECM$log_dogecoin - crypto_pair_VECM$log_dogecoin_fore)/crypto_pair_VECM$log_dogecoin)
-crypto_pair_VECM$amape.log_dogecoin <-  abs((crypto_pair_VECM$log_dogecoin - crypto_pair_VECM$log_dogecoin_fore) / 
-                                             (crypto_pair_VECM$log_dogecoin + crypto_pair_VECM$log_dogecoin_fore))
+# real values and forecast, last 7 observations
+crypto_pair_VECM <- tail(crypto_pair_VECM_data_forecast, 7)
 
 
-#
-colMeans(crypto_pair_VECM[,11:18], na.rm = TRUE)
-# mae.log_bitcoin    mse.log_bitcoin   mape.log_bitcoin  amape.log_bitcoin   mae.log_dogecoin   mse.log_dogecoin  mape.log_dogecoin amape.log_dogecoin 
-# 0.0245712339       0.0008026245       0.0026783285       0.0013367832       0.0124338330       0.0001816705       0.0020868074       0.0010446561 
+# errors bitcoin
+crypto_pair_VECM$mae.bitcoin   <-  abs(crypto_pair_VECM$bitcoin - crypto_pair_VECM$bitcoin_fore)
+crypto_pair_VECM$mse.bitcoin <-  (crypto_pair_VECM$bitcoin - crypto_pair_VECM$bitcoin_fore)^2
+crypto_pair_VECM$mape.bitcoin  <-  abs((crypto_pair_VECM$bitcoin - crypto_pair_VECM$bitcoin_fore)/crypto_pair_VECM$bitcoin)
+crypto_pair_VECM$amape.bitcoin <-  abs((crypto_pair_VECM$bitcoin - crypto_pair_VECM$bitcoin_fore) / 
+                                        (crypto_pair_VECM$bitcoin + crypto_pair_VECM$bitcoin_fore))
+# errors dogecoin
+crypto_pair_VECM$mae.dogecoin   <-  abs(crypto_pair_VECM$dogecoin - crypto_pair_VECM$dogecoin_fore)
+crypto_pair_VECM$mse.dogecoin   <-  (crypto_pair_VECM$dogecoin - crypto_pair_VECM$dogecoin_fore)^2
+crypto_pair_VECM$mape.dogecoin  <-  abs((crypto_pair_VECM$dogecoin - crypto_pair_VECM$dogecoin_fore)/crypto_pair_VECM$dogecoin)
+crypto_pair_VECM$amape.dogecoin <-  abs((crypto_pair_VECM$dogecoin - crypto_pair_VECM$dogecoin_fore) / 
+                                         (crypto_pair_VECM$dogecoin + crypto_pair_VECM$dogecoin_fore))
+
+# get measures
+colMeans(crypto_pair_VECM[,grepl("mae|mse|mape|amape", names(crypto_pair_VECM))], na.rm = TRUE)
+# mae.bitcoin    mse.bitcoin   mape.bitcoin  amape.bitcoin   mae.dogecoin   mse.dogecoin  mape.dogecoin amape.dogecoin 
+# 2.408836e+02   7.703205e+04   2.497780e-02   1.228432e-02   3.236348e-05   1.228102e-09   1.252319e-02   6.216796e-03 
 
 
-# restrict VECM model
-# https://quant.stackexchange.com/questions/21215/imposing-restrictions-on-cointegrating-vectors-r-example
+
+
