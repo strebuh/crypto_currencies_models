@@ -107,18 +107,22 @@ cointegr_tb_signf
 # extract data from contegration test (data clipped to shape in scope was saved there)
 crypto_list <- all_combinations_cointegr$pairs_data
 
+source("functions/finding_stationary_pair.R")
+
 # create plots of given pair, choosing by number of row from result table
 cryptoPairPlots(crypto_list,         # list with data
                 cointegr_tb_signf,  # table of cointefration results
                 n_table = 6,        # which pair to prepare plots for
                 log_prices = TRUE,   # should first plot show log prices?
                 plot_lags = 15,      # how many lags in ACF/PACF 
-                colerograms = TRUE,  # should ACF/PACF be showed
+                # colerograms = F,  # should ACF/PACF be showed
                 diffPlots = TRUE,    # should plots of differenced prices/logprices be showed
                 in_sample = 365,     # how many observations in scope
                 oo_sample = 15,      # number of observations out of scope
                 ggplot = FALSE,       # should first plot be a ggplot based
-                return_data = FALSE  # if laso to return in sample data
+                return_data = FALSE,  # if laso to return in sample data
+                alpha = 0.4,
+                colors = c("red", "black")
                 )         
 
 

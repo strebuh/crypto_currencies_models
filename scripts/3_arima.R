@@ -94,14 +94,12 @@ pacf(resid(c1.arima.4.1.4),
 par(mfrow = c(1, 1)) 
 # no autocorrelation up to 14 lags
 
-Box.test(resid(c1.arima.4.1.4), 
-         type = "Ljung-Box", 
-         lag = 14) 
-# confirmed by LB test
-# Box-Ljung test
-# 
-# data:  resid(c1.arima.4.1.4)
-# X-squared = 6.031, df = 14, p-value = 0.9657
+
+Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag =  4)
+Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag =  7)
+Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 14)
+Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 21)
+Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
 # ---- C1 - ARIMA 2 
 c1.arima.7.1.7 <- Arima(crypto_pair[,1],
@@ -143,14 +141,11 @@ summary(c1.arima.7.1.7)
 #     ME       RMSE        MAE         MPE      MAPE     MASE        ACF1
 # Training set 0.0006248397 0.04349936 0.02731788 0.005557276 0.3017542 1.001517 -0.01950915
 
-Box.test(resid(c1.arima.7.1.7), 
-         type = "Ljung-Box", 
-         lag = 14) 
-# Box-Ljung test
-# 
-# data:  resid(c1.arima.7.1.7)
-# X-squared = 4.0519, df = 14, p-value = 0.9951
-
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  4)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  7)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
 # ---- C1 AUTO ARIMA 1 
 c1.auto.AIC <- auto.arima(crypto_pair[,1],
@@ -187,6 +182,7 @@ pacf(resid(c1.auto.AIC),
 par(mfrow = c(1, 1)) 
 
 # hypothesis of randomness, there is no autocorrelation
+Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag =  4)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag =  7)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 21)
@@ -229,12 +225,112 @@ pacf(resid(c1.auto.BIC),
 par(mfrow = c(1, 1)) 
 # autocorrelation still a problem
 
-# hypothesis of randomness, there is no autocorrelation
+Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag =  4)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag =  7)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 28)
 # there is autocorrelation up to 7 days, almost up to 14 days
+
+# models overview ------------------------------------------------------------------------------------------------------------
+
+c1.arima.models <- list(c1.arima.4.1.4=c1.arima.4.1.4, c1.arima.7.1.7=c1.arima.7.1.7, c1.auto.AIC=c1.auto.AIC, c1.auto.BIC=c1.auto.BIC)
+names(c1.arima.models)
+
+c1.Box_Ljung_df <- c()# as.data.frame(matrix(0, 4, 4))
+
+for(i in 1:4){
+  LB0 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag =  4)$p.value, 3)
+  LB1 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag =  7)$p.value, 3)
+  LB2 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag = 14)$p.value, 3)
+  LB3 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag = 21)$p.value, 3)
+  LB4 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag = 28)$p.value, 3)
+  c1.Box_Ljung_df <- rbind(c1.Box_Ljung_df, c(LB0,LB1,LB2,LB3,LB4))
+}
+c1.Box_Ljung_df <- as.data.frame(c1.Box_Ljung_df)
+colnames(c1.Box_Ljung_df) <- c("L-B p-val 4d","L-B p-val 7d", "L-B p-val 14d", "L-B p-val 21d", "L-B p-val 28d")
+rownames(c1.Box_Ljung_df) <- names(c1.arima.models)
+
+
+
+plot_lags = 10
+colors = c("black", "red", "blue", "dark green")
+c1m1_acf <- acf(resid(c1.arima.models[[1]]),
+                lag.max = plot_lags,
+                plot = FALSE,
+                na.action = na.pass)   
+c1m1_pacf <- pacf(resid(c1.arima.models[[1]]), 
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass) 
+c1m2_acf <- acf(resid(c1.arima.models[[2]]),
+                lag.max = plot_lags, 
+                plot = FALSE,
+                na.action = na.pass)
+c1m2_pacf <- pacf(resid(c1.arima.models[[2]]),
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass)
+c1m3_acf <- acf(resid(c1.arima.models[[3]]),
+                lag.max = plot_lags,
+                plot = FALSE,
+                na.action = na.pass)   
+c1m3_pacf <- pacf(resid(c1.arima.models[[3]]), 
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass) 
+c1m4_acf <- acf(resid(c1.arima.models[[4]]),
+                lag.max = plot_lags, 
+                plot = FALSE,
+                na.action = na.pass)
+c1m4_pacf <- pacf(resid(c1.arima.models[[4]]),
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass)
+
+
+par(mfrow = c(4, 2)) 
+plot(c1m1_acf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[1],
+     main = paste(names(c1.arima.models)[1], "ACF"))
+plot(c1m1_pacf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[1],
+     main = paste(names(c1.arima.models)[1], "PACF"))
+plot(c1m2_acf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[2],
+     main = paste(names(c1.arima.models)[2], "ACF"))
+plot(c1m2_pacf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[2],
+     main = paste(names(c1.arima.models)[2], "PACF"))
+plot(c1m3_acf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[3],
+     main = paste(names(c1.arima.models)[3], "ACF"))
+plot(c1m3_pacf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[3],
+     main = paste(names(c1.arima.models)[3], "PACF"))
+plot(c1m4_acf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[4],
+     main = paste(names(c1.arima.models)[4], "ACF"))
+plot(c1m4_pacf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[4],
+     main = paste(names(c1.arima.models)[4], "PACF"))
+par(mfrow = c(1, 1)) 
 
 
 AIC(c1.arima.4.1.4, c1.arima.7.1.7, c1.auto.AIC, c1.auto.BIC)
@@ -250,59 +346,7 @@ BIC(c1.arima.4.1.4, c1.arima.7.1.7, c1.auto.AIC, c1.auto.BIC)
 # c1.auto.AIC     3 -1217.136
 # c1.auto.BIC     1 -1221.348 <- the best
 
-# --------------------------------------------------- C1 FORCAST -----------------------------------------------------------
-c1.arima.forecast <- forecast(c1.auto.AIC,
-                              h = 7) 
-
-c1.arima.forecast_df <- data.frame(as.numeric(c1.arima.forecast$mean),
-                                   as.numeric(c1.arima.forecast$lower[, 2]),
-                                   as.numeric(c1.arima.forecast$upper[, 2]))
-names(c1.arima.forecast_df) <- c(paste0(names_[1],"_fore"), paste0(names_[1],"_lower"), paste0(names_[1],"_upper"))
-
-# forecast data
-c1.arima.forecast_df <- xts(c1.arima.forecast_df,
-                            head(index(crypto_pair_oos), 7))
-
-# add oos observations
-crypto_pair_all <- rbind(crypto_pair[,1:4], head(crypto_pair_oos, 7))
-dim(crypto_pair_all)
-
-# we can put it together with the original data
-c1_data_forecast <- merge(crypto_pair_all[,1], c1.arima.forecast_df)
-
-tail(c1_data_forecast_[[1]] )
-
-# revert log prices to prices
-c1_data_forecast_ <- lapply(c1_data_forecast, function(x) exp(x[!is.na(x)]))
-
-c1_data_forecast <- c1_data_forecast_[[1]] 
-for(i in names(c1_data_forecast_)[-1]){
-  c1_data_forecast <- merge(c1_data_forecast, c1_data_forecast_[[i]])
-}
-names(c1_data_forecast) <- c(gsub("log_","", names(c1_data_forecast)))
-
-# original data
-plot(c1_data_forecast[(nrow(c1_data_forecast)-30):nrow(c1_data_forecast),], 
-     major.ticks = "years", 
-     grid.ticks.on = "years",
-     grid.ticks.lty = 3,
-     main = "7 days ARIMA forecast of bitcoin",
-     col = c("black", "blue", "red", "red"))
-
-# real values and forecast, last 7 observations
-c1.arima.forecast_df <- tail(c1_data_forecast, 7)
-
-# finally we can calculate popular measures of ex-post prediction errors
-c1.arima.forecast_df$mae   <-  abs(c1.arima.forecast_df$bitcoin - c1.arima.forecast_df$bitcoin_fore)
-c1.arima.forecast_df$mse   <-  (c1.arima.forecast_df$bitcoin - c1.arima.forecast_df$bitcoin_fore)^2
-c1.arima.forecast_df$mape  <-  abs((c1.arima.forecast_df$bitcoin - c1.arima.forecast_df$bitcoin_fore)/c1.arima.forecast_df$bitcoin)
-c1.arima.forecast_df$amape <-  abs((c1.arima.forecast_df$bitcoin - c1.arima.forecast_df$bitcoin_fore)/(c1.arima.forecast_df$bitcoin + c1.arima.forecast_df$bitcoin_fore))
-
-# and get their means
-colMeans(c1.arima.forecast_df[, c("mae", "mse", "mape", "amape")])
-
-# or medians
-apply(c1.arima.forecast_df[, c("mae", "mse", "mape", "amape")], 2, FUN = median)
+coeftest(c1.auto.AIC)
 
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -364,13 +408,12 @@ pacf(resid(c2.arima.4.1.4),
 par(mfrow = c(1, 1)) 
 # no autocorrelation up to 14 lags, around 10th lag is close
 
-Box.test(resid(c2.arima.4.1.4), 
-         type = "Ljung-Box", 
-         lag = 14) 
 # Box-Ljung test
-# 
-# data:  resid(c2.arima.4.1.4)
-# X-squared = 4.0024, df = 14, p-value = 0.9955
+Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag =  4)
+Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag =  7)
+Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 14)
+Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 21)
+Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
 # ---- C2 - ARIMA 2 
 
@@ -416,13 +459,12 @@ summary(c1.arima.7.1.7)
 #     ME       RMSE        MAE         MPE      MAPE     MASE        ACF1
 # Training set 0.0006248397 0.04349936 0.02731788 0.005557276 0.3017542 1.001517 -0.01950915
 
-Box.test(resid(c1.arima.7.1.7), 
-         type = "Ljung-Box", 
-         lag = 14) 
-# Box-Ljung test
-# 
-# data:  resid(c1.arima.7.1.7)
-# X-squared = 4.0519, df = 14, p-value = 0.9951
+
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  4)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  7)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
+Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
 
 c2.auto.AIC <- auto.arima(crypto_pair[,2],
@@ -458,14 +500,13 @@ pacf(resid(c2.auto.AIC),
      na.action = na.pass) 
 par(mfrow = c(1, 1)) 
 
-# hypothesis of randomness, there is no autocorrelation
-Box.test(resid(c2.acuto.AIC), type = "Ljung-Box", lag =  7)
-Box.test(resid(c2.acuto.AIC), type = "Ljung-Box", lag = 14)
-Box.test(resid(c2.acuto.AIC), type = "Ljung-Box", lag = 28)
 # Box-Ljung test
-# 
-# data:  resid(c2.acuto.AIC)
-# X-squared = 4.6319, df = 14, p-value = 0.9903
+# hypothesis of randomness, there is no autocorrelation
+Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag =  4)
+Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag =  7)
+Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 14)
+Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 21)
+Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 28)
 
 c2.auto.BIC <- auto.arima(crypto_pair[,2],
                           d = 1,             # parameter d of ARIMA model
@@ -501,78 +542,120 @@ pacf(resid(c2.auto.BIC),
 par(mfrow = c(1, 1)) 
 
 # hypothesis of randomness, there is no autocorrelation
+Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag =  4)
 Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag =  7)
 Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag = 28)
 # THERE IS AN AUTOCORRELATION
 
-AIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC, c2.auto.BIC)
+
+# models overview ------------------------------------------------------------------------------------------------------------
+
+c2.arima.models <- list(c2.arima.4.1.4=c2.arima.4.1.4,
+                        c2.arima.7.1.7=c2.arima.7.1.7, 
+                        # c2.auto.AIC=c2.auto.AIC, 
+                        c2.auto.BIC=c2.auto.BIC
+                        )
+names(c2.arima.models)
+
+c2.Box_Ljung_df <- c()
+
+for(i in 1:length(c2.arima.models)){
+  LB0 <- round(Box.test(resid(c2.arima.models[[i]]), type = "Ljung-Box", lag =  4)$p.value, 3)
+  LB1 <- round(Box.test(resid(c2.arima.models[[i]]), type = "Ljung-Box", lag =  7)$p.value, 3)
+  LB2 <- round(Box.test(resid(c2.arima.models[[i]]), type = "Ljung-Box", lag = 14)$p.value, 3)
+  LB3 <- round(Box.test(resid(c2.arima.models[[i]]), type = "Ljung-Box", lag = 21)$p.value, 3)
+  LB4 <- round(Box.test(resid(c2.arima.models[[i]]), type = "Ljung-Box", lag = 28)$p.value, 3)
+  c2.Box_Ljung_df <- rbind(c2.Box_Ljung_df, c(LB0,LB1,LB2,LB3,LB4))
+}
+c2.Box_Ljung_df <- as.data.frame(c2.Box_Ljung_df)
+colnames(c2.Box_Ljung_df) <- c("L-B p-val 4d","L-B p-val 7d", "L-B p-val 14d", "L-B p-val 21d", "L-B p-val 28d")
+rownames(c2.Box_Ljung_df) <- names(c2.arima.models)
+
+plot_lags = 10
+colors = c("black", "red", "blue", "dark green")
+c1m1_acf <- acf(resid(c2.arima.models[[1]]),
+                lag.max = plot_lags,
+                plot = FALSE,
+                na.action = na.pass)   
+c1m1_pacf <- pacf(resid(c2.arima.models[[1]]), 
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass) 
+c1m2_acf <- acf(resid(c2.arima.models[[2]]),
+                lag.max = plot_lags, 
+                plot = FALSE,
+                na.action = na.pass)
+c1m2_pacf <- pacf(resid(c2.arima.models[[2]]),
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass)
+c1m3_acf <- acf(resid(c2.arima.models[[3]]),
+                lag.max = plot_lags,
+                plot = FALSE,
+                na.action = na.pass)   
+c1m3_pacf <- pacf(resid(c2.arima.models[[3]]), 
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass) 
+
+
+par(mfrow = c(length(c2.arima.models), 2)) 
+plot(c1m1_acf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[1],
+     main = paste(names(c2.arima.models)[1], "ACF"))
+plot(c1m1_pacf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[1],
+     main = paste(names(c2.arima.models)[1], "PACF"))
+plot(c1m2_acf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[2],
+     main = paste(names(c2.arima.models)[2], "ACF"))
+plot(c1m2_pacf,
+     ylim = c(-0.5, 0.5),
+     lwd = 5,
+     col = colors[2],
+     main = paste(names(c2.arima.models)[2], "PACF"))
+plot(c1m3_acf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[3],
+     main = paste(names(c2.arima.models)[3], "ACF"))
+plot(c1m3_pacf, 
+     ylim = c(-0.5, 0.5),    
+     lwd = 5,              
+     col = colors[3],
+     main = paste(names(c2.arima.models)[3], "PACF"))
+par(mfrow = c(1, 1)) 
+
+
+AIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC)
 # df       AIC
 # c2.arima.4.1.4  9 -1353.149
 # c2.arima.7.1.7 15 -1353.560 <- 
 # c2.auto.AIC     2 -1353.478 <- 
 # c2.auto.BIC     2 -1353.478
 
-BIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC, c2.auto.BIC)
+BIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC)
 # c2.arima.4.1.4  9 -1318.075 
 # c2.arima.7.1.7 15 -1295.103
 # c2.auto.AIC     2 -1345.683 <- 
 # c2.auto.BIC     2 -1345.683
 
 
-# --------------------------------------------------- C2 FORCAST -----------------------------------------------------------
-c2.arima.forecast <- forecast(c2.auto.AIC,
-                                 h = 7) 
+coeftest(c2.auto.AIC)
+# z test of coefficients:
+#   
+#   Estimate Std. Error z value Pr(>|z|)   
+# ar1 -0.156974   0.051885 -3.0254 0.002483 **
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-c2.arima.forecast_df <- data.frame(as.numeric(c2.arima.forecast$mean),
-                                as.numeric(c2.arima.forecast$lower[, 2]),
-                                as.numeric(c2.arima.forecast$upper[, 2]))
-names(c2.arima.forecast_df) <- c(paste0(names_[2],"_fore"), paste0(names_[2],"_lower"), paste0(names_[2],"_upper"))
 
-# forecast data
-c2.arima.forecast_df <- xts(c2.arima.forecast_df,
-                         head(index(crypto_pair_oos), 7))
-
-# add oos observations
-crypto_pair_all <- rbind(crypto_pair[,1:4], head(crypto_pair_oos, 7))
-dim(crypto_pair_all)
-
-# we can put it together with the original data
-c2_data_forecast <- merge(crypto_pair_all[,2], c2.arima.forecast_df)
-dim(c2_data_forecast)
-
-# revert log prices to prices
-c2_data_forecast_ <- lapply(c2_data_forecast, function(x) exp(x[!is.na(x)]))
-
-c2_data_forecast <- c2_data_forecast_[[1]] 
-for(i in names(c2_data_forecast_)[-1]){
-  c2_data_forecast <- merge(c2_data_forecast, c2_data_forecast_[[i]])
-}
-names(c2_data_forecast) <- c(gsub("log_","", names(c2_data_forecast)))
-
-# original data
-plot(c2_data_forecast[(nrow(c2_data_forecast)-30):nrow(c2_data_forecast),], 
-     major.ticks = "years", 
-     grid.ticks.on = "years",
-     grid.ticks.lty = 3,
-     main = "7 days ARIMA forecast of dogecoin",
-     col = c("black", "blue", "red", "red"))
-
-# real values and forecast, last 7 observations
-c2.arima.forecast_df <- tail(c2_data_forecast, 7)
-
-names(c2.arima.forecast_df)
-
-# finally we can calculate popular measures of ex-post prediction errors
-c2.arima.forecast_df$mae   <-  abs(c2.arima.forecast_df$dogecoin - c2.arima.forecast_df$dogecoin_fore)
-c2.arima.forecast_df$mse   <-  (c2.arima.forecast_df$dogecoin - c2.arima.forecast_df$dogecoin_fore)^2
-c2.arima.forecast_df$mape  <-  abs((c2.arima.forecast_df$dogecoin - c2.arima.forecast_df$dogecoin_fore)/c2.arima.forecast_df$dogecoin)
-c2.arima.forecast_df$amape <-  abs((c2.arima.forecast_df$dogecoin - c2.arima.forecast_df$dogecoin_fore)/(c2.arima.forecast_df$dogecoin + c2.arima.forecast_df$dogecoin_fore))
-
-# and get their means
-colMeans(c2.arima.forecast_df[, c("mae", "mse", "mape", "amape")])
-
-# or medians
-apply(c2.arima.forecast_df[, c("mae", "mse", "mape", "amape")], 2, FUN = median)
 

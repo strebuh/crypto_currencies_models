@@ -508,7 +508,8 @@ get_pair_plot <- function(x, y, data_list = NULL,  n_last = NULL, log_price = F,
 get_pair_plot2 <- function(data, # dataframe or xts
                           # log_price = F, 
                           standardize = F,
-                          ggplot = F
+                          ggplot = F,
+                          colors = c("black", "blue")
                           ){
   
 
@@ -540,7 +541,7 @@ get_pair_plot2 <- function(data, # dataframe or xts
     # Multiple line plot
     gg_plot <- ggplot(data_long, aes(x = Date, y = value)) +
       geom_line(aes(color = variable), size = 1) +
-      scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+      scale_color_manual(values = colors) +
       theme_minimal() +
       theme(legend.position="top") +
       ggtitle(paste(unique(data_long$variable)[1], unique(data_long$variable)[2], sep="-"))
@@ -558,7 +559,7 @@ get_pair_plot2 <- function(data, # dataframe or xts
       
     data <- data[,1:2]
     print(plot(data,
-               col = c("black", "blue"),
+               col = colors,
                major.ticks = "years",
                grid.ticks.on = "years",
                grid.ticks.lty = 3,
@@ -576,12 +577,14 @@ cryptoPairPlots <- function(crypto_list,             # list with data, but from 
                             log_prices = TRUE,       # should first plot show log prices?
                             scale_plot = TRUE,       # if data on a plot sould be also scaled
                             plot_lags = 15,          # how many lags in ACF/PACF 
-                            colerograms = TRUE,      # should ACF/PACF be showed
+                            # colerograms = TRUE,      # should ACF/PACF be showed
                             diffPlots=TRUE,          # should plots of differenced prices/logprices be showed
                             in_sample = 365,         # how many observations in scope
                             oo_sample = 15,          # number of observations out of scope
                             ggplot = FALSE,          # should first plot be a ggplot based
-                            return_data = FALSE      # if laso to return in sample data
+                            return_data = FALSE,      # if laso to return in sample data
+                            alpha = c(1, 0.5),
+                            colors = c("black", "blue")
                             ){
   
   # prapeare data with based on table and list of data
@@ -621,7 +624,7 @@ cryptoPairPlots <- function(crypto_list,             # list with data, but from 
   # crypto_pair <- head(tail(crypto_pair,in_sample + oo_sample), in_sample)
   
   # get plot of prices/log prices
-  get_pair_plot2(crypto_pair, ggplot = ggplot, standardize = scale_plot)
+  # get_pair_plot2(crypto_pair, ggplot = ggplot, standardize = scale_plot)
   
   c1d <- names(crypto_pair)[3]
   c2d <- names(crypto_pair)[4]
@@ -629,34 +632,92 @@ cryptoPairPlots <- function(crypto_list,             # list with data, but from 
   # plot of differences
   if(diffPlots){
     par(mfrow = c(2, 1)) 
-    print(plot(crypto_pair[,c1d], xaxt = "n", main = c1d)) # c1d
-    print(plot(crypto_pair[,c2d], main = c2d)) # c2d
+    get_pair_plot2(crypto_pair, ggplot = ggplot, standardize = scale_plot, colors = colors)
+    print(plot(crypto_pair[,c(c1d,c2d)],
+               # xaxt = "n",
+               main = paste(c1d, "and", c2d),
+               col = alpha(colors, alpha),
+               # major.ticks = "years",
+               # grid.ticks.on = "years",
+               grid.ticks.lty = 3,
+               legend.loc = "bottomleft",
+               )) # c1d
+    # print(plot(crypto_pair[,c2d], 
+    #            main = c2d)) # c2d
     par(mfrow = c(1, 1))
   }
 
-  # plot of colerograms
-  if(colerograms){
-    for(i in names(crypto_pair)[3:4]){ # c(c1d, c2d)
-      title <- paste("ACF and PACF of", i)
-      par(mfrow = c(2, 1)) 
-      acf(crypto_pair[,i],
-          lag.max = plot_lags, 
-          ylim = c(-0.5, 0.5),    
-          lwd = 5,              
-          col = "dark green",
-          na.action = na.pass,
-          main = title)   
-      pacf(crypto_pair[,i], 
-           lag.max = plot_lags, 
-           ylim = c(-0.5, 0.5),
-           lwd = 5, col = "dark green",
-           na.action = na.pass,
-           main = ""
-           ) 
-      par(mfrow = c(1, 1))
-    }
-    par(mfrow = c(1, 1))
-  }
+  
+  # # plot of colerograms
+  # if(colerograms){
+  #   for(i in names(crypto_pair)[3:4]){ # c(c1d, c2d)
+  #     title <- paste("ACF and PACF of", i)
+  #     par(mfrow = c(2, 1))
+  #     acf(crypto_pair[,i],
+  #         lag.max = plot_lags,
+  #         ylim = c(-0.5, 0.5),
+  #         lwd = 5,
+  #         col = "dark green",
+  #         na.action = na.pass,
+  #         main = title)
+  #     pacf(crypto_pair[,i],
+  #          lag.max = plot_lags,
+  #          ylim = c(-0.5, 0.5),
+  #          lwd = 5, col = "dark green",
+  #          na.action = na.pass,
+  #          main = ""
+  #          )
+  #     par(mfrow = c(1, 1))
+  #   }
+  #   par(mfrow = c(1, 1))
+  # } else {
+  # for(i in names(crypto_pair)[3:4]){
+    # title <- paste("ACF and PACF of", i)
+        c1_acf <- acf(crypto_pair[,3],
+                      lag.max = plot_lags,
+                      plot = FALSE,
+                      na.action = na.pass)   
+        c1_pacf <- pacf(crypto_pair[,3], 
+                        lag.max = plot_lags, 
+                        plot = FALSE,
+                        na.action = na.pass
+                        ) 
+        c2_acf <- acf(crypto_pair[,4],
+                      lag.max = plot_lags, 
+                      plot = FALSE,
+                      na.action = na.pass)
+        c2_pacf <- pacf(crypto_pair[,4],
+                        lag.max = plot_lags, 
+                        plot = FALSE,
+                        na.action = na.pass)
+        
+        par(mfrow = c(2, 2)) 
+        plot(c1_acf, 
+             ylim = c(-0.5, 0.5),    
+             lwd = 5,              
+             col = colors[1],
+             main = paste(c1d, "ACF"))
+        plot(c1_pacf, 
+             ylim = c(-0.5, 0.5),    
+             lwd = 5,              
+             col = colors[1],
+             main = paste(c1d, "PACF"))
+        plot(c2_acf,
+             ylim = c(-0.5, 0.5),
+             lwd = 5,
+             col = colors[2],
+             main = paste(c2d, "ACF"))
+        plot(c2_pacf,
+             ylim = c(-0.5, 0.5),
+             lwd = 5,
+             col = colors[2],
+             main = paste(c2d, "PACF"))
+        par(mfrow = c(1, 1)) 
+  # }
+  # }
+  
+
+  
   # conditional data to return
   if(return_data){
     return(crypto_pair)

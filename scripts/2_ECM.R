@@ -80,9 +80,9 @@ summary(model.ecm)
 # -------------------------------------------- GRANGER CASUALITY --------------------------------------------------------
 
 # log_dogecoin ~ log_bitcoin
-combination_formula3 <- as.formula(paste(names_[4], names_[3], sep="~"))
+granger_formula <- as.formula(paste(names_[4], names_[3], sep="~"))
 # d_cardano ~ d_siacoin
-combination_formula3_inv <- as.formula(paste(names_[3], names_[4], sep="~"))
+granger_formula_inv <- as.formula(paste(names_[3], names_[4], sep="~"))
 
 
 casuality <- matrix(NA, ncol = 5, nrow = 7)
@@ -91,22 +91,22 @@ for(i in 1:7){
   casuality[i,1] <- i
   
   # d_siacoin ~ d_cardano
-  gr4_3 <- grangertest(combination_formula3,
+  gr4_3 <- grangertest(granger_formula,
                        data = crypto_pair,
                        order = i)
-  casuality[i,2] <- gr4_3$`Pr(>F)`[2]
+  casuality[i,2] <- round(gr4_3$`Pr(>F)`[2],3)
   casuality[i,3] <- if(gr4_3$`Pr(>F)`[2] < 0.05) "cause" else "no"
   
   # d_cardano ~ d_siacoin
-  gr3_4 <- grangertest(combination_formula3_inv,
+  gr3_4 <- grangertest(granger_formula_inv,
                        data = crypto_pair,
                        order = i) # lag assumed
-  casuality[i,4] <- gr3_4$`Pr(>F)`[2]
+  casuality[i,4] <- round(gr3_4$`Pr(>F)`[2],3)
   casuality[i,5] <- if(gr3_4$`Pr(>F)`[2] < 0.05) "cause" else "no"
 }
 
 casuality <- as.data.frame(casuality)
-names(casuality) <- c("lags", paste0(names_[4], "_", names_[3]), "if_granger_1", paste0(names_[3], "_", names_[4]), "if_granger_2")
+names(casuality) <- c("lags", paste0("p-val:", names_[3], "~", names_[4]), "if_granger_1", paste0("p-val:", names_[4], "~", names_[3]), "if_granger_2")
 casuality
 # H0: no casuality
 
