@@ -203,10 +203,6 @@ AIC and BIC criterions again suggested different models. AIC suggest however in 
 
 ![varBIC](.\img\varBIC.PNG)
 
-
-
-
-
 ### VECM 
 
 
