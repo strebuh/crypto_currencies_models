@@ -22,7 +22,7 @@ I have written function that compares each pair of currencies available on www.c
 
 The table below shows the results of cointegration analysis made in loop for **log closing prices**  of each pair of currencies available on the website, based on 365 observations (in sample) prior to mid June 2020. 
 
-![tesult_table2](img/tesult_table2.PNG)
+![tesult_table2](img/tesult_table2.png)
 
 Table above shows example output, where a row contains Engle&Granger and Johansen cointegration procedures results, testing for integration of series that are themselves I(1).
 
@@ -60,7 +60,7 @@ Looking on correlograms of their first differences, It seems that neither follow
 
 For Bitcoin log-prices lags 1, 4 to show significant correlation with chosen moment, both at ACF and PACF. Dogecoin shows similar pattern with exception than ACF at second lag is relatively close to the dashed line. In next step the error correction model will be evaluated for these crypto currencies.
 
-![pair_acf_pacf](./img/pair_acf_pacf.png)
+![pair_acf_pacf](img/pair_acf_pacf.png)
 
 
 
@@ -68,7 +68,7 @@ For Bitcoin log-prices lags 1, 4 to show significant correlation with chosen mom
 
 Linear combination of these two series is expressed by following relation:
 
-![l_comb_fomula](.\img\l_comb_fomula.PNG)
+![l_comb_fomula](img/l_comb_fomula.PNG)
 
 
 
@@ -76,7 +76,7 @@ Linear combination model summary coefficients are significant (both log_bitcoin 
 
 Cointegrating vector is **[1, - 13.294229, -0.80464]**. It can be interpreted as follows, **if bitcoin log prices of increase by 1 percentage point, log prices increase by  ~0.8 percentage point**.
 
-![l_comb_summary](.\img\l_comb_summary.PNG)
+![l_comb_summary](/img/l_comb_summary.PNG)
 
  
 
