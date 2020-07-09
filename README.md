@@ -26,7 +26,7 @@ The table below shows the results of cointegration analysis made in loop for **l
 
 Table above shows example output, where a row contains Engle&Granger and Johansen cointegration procedures results, testing for integration of series that are themselves I(1).
 
-Each row of the table contains several information. First column  is the **range of  time of in sample data**, **number of observations** used for each currency in cointegration procedure. Next 3 columns are consecutively **name of the first crypto currency** followed by **adf test p-value** for the first augmentation that do not reveal the problem of autocorrelation of any lag; *if mentioned p-value is higher that 5%* critical value, next column contain **adf test p-values of the first difference series**. Columns 7-9 present the according results for second crypto currency.   Column 10 tells the rank of VECM model obtained from Johansen test (**zero**: no cointegrating vector; **one**: one cointegrating vector). 
+Each row of the table contains several information. First column  is the **range of  time of in sample data**, **number of observations** used for each currency in cointegration procedure. Next 3 columns are consecutively **name of the first crypto currency** followed by **adf test p-value** for the first augmentation that do not reveal the problem of autocorrelation of any lag; *if mentioned p-value is higher that 5%* critical value, next column contain **adf test p-values of the first difference series**. Columns 7-9 present the according results for second crypto currency.   Column 10 tells the rank of VECM model obtained from **Johansen test **(**zero**: no cointegrating vector; **one**: one cointegrating vector). One additional improvement to be done is to introduce another column, Jarque-Bera test of residuals, which would suggest if Johansen test assumption of normality is met.
 
 Last three columns refer to linear combination of crypto currencies. It's adf statistic, cointegrating vector and information, and final information regarding cointegration.
 
@@ -183,7 +183,6 @@ Function VAR select suggested two lags in vector autoregressive model. Three dif
 
 4. VAR(4), which was computed as the last one, to verify, if adding 4th lag will diminish correlation of 4th lag visible on ACF and PACF plots.
 
-   
 
 VAR models residual plots for both currencies are presented below. What is visible, is that lag 4 in each is slightly above the line. The situation did not change even in VAR model with 4 lags, the effect of adding 2 additional lags was reducing correlation of lower lags (1, 2 and 3), which is visible on 4th row of plots - dark green bars.
 
@@ -203,11 +202,63 @@ AIC and BIC criterions again suggested different models. AIC suggest however in 
 
 ![varBIC](.\img\varBIC.PNG)
 
+
+
+First component of VAR model, where log_bitcoin is plays a role of dependent variable, have 2 parameters significant at 5% significance level (intercept and first lag of bitcoint) and one at 1% (bitcoin second lag), neither lag of dogecoin seems significant, which complies with Granger casuality test. For second component, equation where an endogenous variable is log_dogecoin intercept is not significant, but first lags of both currencies significantly contribute to log dogecoin as well as second lag of log bitcoin. 
+
+![final_VAR_coeficients](.\img\final_VAR_coeficients.png)
+
+Above coefficients are not to be interpreted as such but below are presented input response function and variance decomposition are presented.
+
+Input response for shock from bitcoin seems to stabilize and decrease for both currencies, while at initial stage for both remains significant and positive. In case of impulse from dogecoin initially it is positive and only noticeable for  itself and as the time passes it starts having some effect on bitcoin. Dogecoin is much weaker currency, and it is understandable that shocks in such minor currency will not affect immediately one of the primary market players. It's significance increases to some level as the time passes.
+
+![final_VAR_coeficients](.\img\irf_VAR.png)
+
+![final_VAR_coeficients](.\img\irf_var_2.png)
+
+
+
+The variance decomposition indicates the amount of information that each system element contributes to the other one, in term of autoregression. The results are compatible IRF, first few periods (days) ahead bitcoin log price forecast error variance is only influenced by itself, in long run there seems to be some mild influence of dogecoin shocks. The influence of bitcoin shocks on dogecoin seems to be much stronger, as dogecoin in first few days forecast error variance is even more related to bitcoin that itself, while from 3rd day on, it is primarily related to dogecoin.
+
+![vd_VAR](.\img\vd_VAR.png)
+
 ### VECM 
+
+VECM model starts from checking cointegration with Johansen test. Johansen trace and Johansen eigenvalues test results give the same results, indicating that the rank of the system is equal 1, ie. there is one cointegrating vector, at 5% significance level. r=0 values are higher that c.v. thus we reject these null hypothesis, and look at r<=1, where we are not able to reject. 
+
+![johansen_trance_strip](.\img\johansen_trance_strip.png)
+
+![johasen_eigen_snip](.\img\johasen_eigen_snip.png)
+
+The VECM  model  with one cointegration rank summary shows that error correction term which shapes the long run relationship, the convergence to long-run equilibrium in dynamic system. The terms are expected to be of opposite signs, which would, which is not a case in this example. At least only one term (in formula with log_bitcoin as dependent variable) is significant. It could fit previous findings, that these was bitcoin that influence dogecoin and not the other way around, as the difference between capitalizations and prices of these currencies is enormous. Puzzling is that the ECT element is significant in equation where log_bitcoin is dependent variable, not the other way around, but again it may be due to the difference in values, which is also noticeable in log prices.
+
+![vecm_sumamry_full](.\img\vecm_sumamry_full.png)
+
+In long run log bitcoin seems to be higher than log dogecoin, which is given by cointegrating vector of betas.
+
+![johansen_eigen_cointegration](.\img\johansen_eigen_cointegration.png)
+
+The VECM model represented as VAR residuals seem to exhibit stronger autocorrelation in case of bitcoin as well as dogecoin, comparing to various previous models, except VAR(2), which is in fact VECM(1) model, thus correlograms also are alike.
+
+![vecm_acf_pacf](.\img\vecm_acf_pacf.png)
+
+![B-G_vecm2VAR](.\img\B-G_vecm2VAR.png)
+
+
+
+Variance decomposition plot is also alike to VAR(2) model.
+
+![vecm2var_fevd1](.\img\vecm2var_fevd1.png)
+
+The same is also observed for autocorrelation test.
+
+![B-G_vecm2VAR](.\img\B-G_vecm2VAR.png)
 
 
 
 
 
 ### Forecasts
+
+Finally let's compare 7 days forecast out of sample period ()
 
