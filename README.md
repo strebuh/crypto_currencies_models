@@ -248,11 +248,11 @@ The VECM model represented as VAR residuals seem to exhibit stronger autocorrela
 
 Variance decomposition plot is also alike to VAR(2) model.
 
-![vecm2var_fevd1](.\img\vecm2var_fevd1.png)
+![vecm2var_fevd1](img/vecm2var_fevd1.png)
 
 The same is also observed for autocorrelation test.
 
-![B-G_vecm2VAR](.\img\B-G_vecm2VAR.png)
+![B-G_vecm2VAR](img/B-G_vecm2VAR.png)
 
 
 
