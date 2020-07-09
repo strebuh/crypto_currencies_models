@@ -1,4 +1,29 @@
 
+
+
+# load results of contegration checks
+all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
+cointegr_tb_signf <- readRDS("./data/cointegr_tb_signf_5_7.RDS")
+
+# get data with differences and log prices
+crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
+                                     n_table = 6,                                    # which pair to prepare plots for
+                                     n_obs_is = 365,                                 # how many observations in scope
+                                     n_obs_ooc = 15,                                 # number of observations out of scope
+                                     clipped = all_combinations_cointegr$pairs_data, # list with data after 
+                                     # crypto_list = crypto_list,
+                                     log_prices = TRUE)
+
+# in sample data and out of sample data
+crypto_pair <- crypto_pair_all$in_smpl
+crypto_pair_oos <- crypto_pair_all$oo_smpl
+
+# read models
+c1.auto.AIC <- readRDS("./data/c1.arima111.rds")
+c2.auto.AIC <- readRDS("./data/c2.arima110.rds")
+crypto_pair.VAR.2 <- readRDS("./data/crypto_pair_VAR2.rds")
+crypto_pair.vecm.1.asVAR <- readRDS("./data/crypto_pair_vecm1asVAR.rds")
+
 # ---------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------- ARIMA ---------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------------------------

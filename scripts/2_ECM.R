@@ -9,10 +9,8 @@ source("functions/finding_stationary_pair.R")
 
 # ---------------------------------------------------------------------------------------------------------------------
 # load results of contegration checks
-all_combinations_cointegr <- readRDS("./data/all_combinations_2coint_2.RDS")
+all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")# "./data/all_combinations_2coint_2.RDS"
 cointegr_tb_signf <- readRDS("./data/cointegr_tb_signf_5_7.RDS")
-
-
 
 # coint_info.8  2019-06-03 2020-06-01   365         bitcoin    0.1625           0.01         dogecoin    0.2845           0.01      one -3.85353190132444
 
@@ -40,14 +38,13 @@ cryptoPairPlots(crypto_list,         # list with data
 
 
 # get data with differences and log prices
-crypto_pair <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
-                                 n_table = 6,                                    # which pair to prepare plots for
-                                 n_obs_is = 365,                                  # how many observations in scope
-                                 n_obs_ooc = 15,                                  # number of observations out of scope
-                                 clipped = crypto_list, # list with data after 
-                                 # crypto_list = crypto_list,
-                                 log_prices = TRUE
-)
+crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
+                                     n_table = 6,                                    # which pair to prepare plots for
+                                     n_obs_is = 365,                                 # how many observations in scope
+                                     n_obs_ooc = 15,                                 # number of observations out of scope
+                                     clipped = all_combinations_cointegr$pairs_data, # list with data after 
+                                     # crypto_list = crypto_list,
+                                     log_prices = TRUE)
 
 crypto_pair <- crypto_pair_all$in_smpl
 crypto_pair_oos <- crypto_pair_all$oo_smpl

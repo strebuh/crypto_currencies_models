@@ -6,18 +6,17 @@ source("functions/finding_stationary_pair.R")
 
 
 # load results of contegration checks
-all_combinations_cointegr <- readRDS("./data/all_combinations_2coint_2.RDS")
+all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
 cointegr_tb_signf <- readRDS("./data/cointegr_tb_signf_5_7.RDS")
 
 # get data with differences and log prices
-crypto_pair <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
-                                 n_table = 6,                                    # which pair to prepare plots for
-                                 n_obs_is = 365,                                  # how many observations in scope
-                                 n_obs_ooc = 15,                                  # number of observations out of scope
-                                 clipped = crypto_list, # list with data after 
-                                 # crypto_list = crypto_list,
-                                 log_prices = TRUE
-)
+crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
+                                     n_table = 6,                                    # which pair to prepare plots for
+                                     n_obs_is = 365,                                 # how many observations in scope
+                                     n_obs_ooc = 15,                                 # number of observations out of scope
+                                     clipped = all_combinations_cointegr$pairs_data, # list with data after 
+                                     # crypto_list = crypto_list,
+                                     log_prices = TRUE)
 
 crypto_pair <- crypto_pair_all$in_smpl
 crypto_pair_oos <- crypto_pair_all$oo_smpl
@@ -30,11 +29,10 @@ names(crypto_pair)
 # --------------------------------------------------- ARIMA -----------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------- BITCOIN ----------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------------------------------------
 
-# ---- C1 - ARIMA 1
+# -------------------------------------------------- BITCOIN ----------------------------------------------------------------
+
+# ------------------------------------------------------------------------- C1 - ARIMA 1
 c1.arima.4.1.4 <- Arima(crypto_pair[,1],
                      order = c(4, 1, 4),
                      method = "CSS-ML",
@@ -42,10 +40,6 @@ c1.arima.4.1.4 <- Arima(crypto_pair[,1],
                      optim.method = "L-BFGS-B",
                      include.mean = TRUE
                      )
-
-# optim.control = list(maxit = 800),
-# optim.method = "Brent"
-# method = "CSS")
 
 coeftest(c1.arima.4.1.4)
 # z test of coefficients:
@@ -58,26 +52,6 @@ coeftest(c1.arima.4.1.4)
 # ma2  0.017040   0.594976  0.0286  0.977152    
 # ma3  0.771053   0.292611  2.6351  0.008412 ** 
 # ma4  0.363401   0.981768  0.3701  0.711271    
-# ---
-#     Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-summary(c1.arima.4.1.4)
-
-# third lags seem significant
-
-# Series: crypto_pair[, 1] 
-# ARIMA(4,1,4) 
-# 
-# Coefficients:
-#     ar1     ar2      ar3      ar4     ma1    ma2     ma3     ma4
-# -0.1592  0.0462  -0.7588  -0.3545  0.0473  0.017  0.7711  0.3634
-# s.e.   1.3765  0.4263   0.1481   1.0326  1.3702  0.595  0.2926  0.9818
-# 
-# sigma^2 estimated as 0.001953:  log likelihood=620.99
-# AIC=-1223.98   AICc=-1223.47   BIC=-1188.9
-# 
-# Training set error measures:
-#     ME       RMSE        MAE         MPE      MAPE      MASE         ACF1
-# Training set 0.0005959591 0.04364269 0.02717153 0.005326794 0.3000251 0.9961512 -0.004583973
 
 par(mfrow = c(2, 1)) 
 acf(resid(c1.arima.4.1.4),
@@ -101,7 +75,7 @@ Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
-# ---- C1 - ARIMA 2 
+# ------------------------------------------------------------------------- C1 - ARIMA 2
 c1.arima.7.1.7 <- Arima(crypto_pair[,1],
                         order = c(7, 1, 7),
                         method = "CSS-ML",
@@ -125,21 +99,6 @@ coeftest(c1.arima.7.1.7)
 # ma5  0.614928   0.201267  3.0553  0.002248 ** 
 # ma6 -0.365628   0.971437 -0.3764  0.706636    
 # ma7  0.067626   0.517825  0.1306  0.896094 
-summary(c1.arima.7.1.7)
-# Series: crypto_pair[, 1] 
-# ARIMA(7,1,7) 
-# 
-# Coefficients:
-#     ar1     ar2     ar3      ar4     ar5     ar6      ar7      ma1      ma2      ma3     ma4     ma5      ma6     ma7
-# 0.1160  0.3969  0.2527  -0.2547  -0.612  0.2196  -0.1306  -0.2081  -0.3852  -0.2826  0.4404  0.6149  -0.3656  0.0676
-# s.e.  0.9087  1.1313  0.2873   0.2263     NaN  0.8801   0.5965   0.8625   0.9876   0.3038  0.1040  0.2013   0.9714  0.5178
-# 
-# sigma^2 estimated as 0.001973:  log likelihood=623.57
-# AIC=-1217.15   AICc=-1215.77   BIC=-1158.69
-# 
-# Training set error measures:
-#     ME       RMSE        MAE         MPE      MAPE     MASE        ACF1
-# Training set 0.0006248397 0.04349936 0.02731788 0.005557276 0.3017542 1.001517 -0.01950915
 
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  4)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  7)
@@ -147,7 +106,7 @@ Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
-# ---- C1 AUTO ARIMA 1 
+# ------------------------------------------------------------------------- C1 - ARIMA 3
 c1.auto.AIC <- auto.arima(crypto_pair[,1],
                           d = 1,             # parameter d of ARIMA model
                           D = 1,
@@ -165,7 +124,7 @@ c1.auto.AIC <- auto.arima(crypto_pair[,1],
                           allowdrift = TRUE, # include a constant
                           trace = TRUE # show summary of all models considered
 )      
-# Best model: ARIMA(1,1,1) # 3  [1] "log_bitcoin"       "log_dogecoin"     
+# Best model: ARIMA(1,1,1)    
 
 par(mfrow = c(2, 1)) 
 acf(resid(c1.auto.AIC),
@@ -188,7 +147,7 @@ Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 28)
 
-# ---- C1 AUTO ARIMA 2
+# ------------------------------------------------------------------------- C1 - ARIMA 4
 
 c1.auto.BIC <- auto.arima(crypto_pair[,1],
                           d = 1,             # parameter d of ARIMA model
@@ -232,12 +191,15 @@ Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 28)
 # there is autocorrelation up to 7 days, almost up to 14 days
 
-# models overview ------------------------------------------------------------------------------------------------------------
 
-c1.arima.models <- list(c1.arima.4.1.4=c1.arima.4.1.4, c1.arima.7.1.7=c1.arima.7.1.7, c1.auto.AIC=c1.auto.AIC, c1.auto.BIC=c1.auto.BIC)
-names(c1.arima.models)
+# ------------------------------------------------------------------------------------ models overview
 
-c1.Box_Ljung_df <- c()# as.data.frame(matrix(0, 4, 4))
+c1.arima.models <- list(c1.arima.4.1.4=c1.arima.4.1.4, 
+                        c1.arima.7.1.7=c1.arima.7.1.7, 
+                        c1.auto.AIC=c1.auto.AIC, 
+                        c1.auto.BIC=c1.auto.BIC)
+
+c1.Box_Ljung_df <- c()
 
 for(i in 1:4){
   LB0 <- round(Box.test(resid(c1.arima.models[[i]]), type = "Ljung-Box", lag =  4)$p.value, 3)
@@ -252,85 +214,86 @@ colnames(c1.Box_Ljung_df) <- c("L-B p-val 4d","L-B p-val 7d", "L-B p-val 14d", "
 rownames(c1.Box_Ljung_df) <- names(c1.arima.models)
 
 
-
-plot_lags = 10
-colors = c("black", "red", "blue", "dark green")
-c1m1_acf <- acf(resid(c1.arima.models[[1]]),
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m1_pacf <- pacf(resid(c1.arima.models[[1]]), 
-                  lag.max = plot_lags, 
+if(1){
+  plot_lags = 10
+  colors = c("black", "red", "blue", "dark green")
+  c1m1_acf <- acf(resid(c1.arima.models[[1]]),
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c1m2_acf <- acf(resid(c1.arima.models[[2]]),
-                lag.max = plot_lags, 
-                plot = FALSE,
-                na.action = na.pass)
-c1m2_pacf <- pacf(resid(c1.arima.models[[2]]),
+                  na.action = na.pass)   
+  c1m1_pacf <- pacf(resid(c1.arima.models[[1]]), 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c1m2_acf <- acf(resid(c1.arima.models[[2]]),
                   lag.max = plot_lags, 
                   plot = FALSE,
                   na.action = na.pass)
-c1m3_acf <- acf(resid(c1.arima.models[[3]]),
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m3_pacf <- pacf(resid(c1.arima.models[[3]]), 
-                  lag.max = plot_lags, 
+  c1m2_pacf <- pacf(resid(c1.arima.models[[2]]),
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c1m3_acf <- acf(resid(c1.arima.models[[3]]),
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c1m4_acf <- acf(resid(c1.arima.models[[4]]),
-                lag.max = plot_lags, 
-                plot = FALSE,
-                na.action = na.pass)
-c1m4_pacf <- pacf(resid(c1.arima.models[[4]]),
+                  na.action = na.pass)   
+  c1m3_pacf <- pacf(resid(c1.arima.models[[3]]), 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c1m4_acf <- acf(resid(c1.arima.models[[4]]),
                   lag.max = plot_lags, 
                   plot = FALSE,
                   na.action = na.pass)
-
-
-par(mfrow = c(4, 2)) 
-plot(c1m1_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(c1.arima.models)[1], "ACF"))
-plot(c1m1_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(c1.arima.models)[1], "PACF"))
-plot(c1m2_acf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(c1.arima.models)[2], "ACF"))
-plot(c1m2_pacf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(c1.arima.models)[2], "PACF"))
-plot(c1m3_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(c1.arima.models)[3], "ACF"))
-plot(c1m3_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(c1.arima.models)[3], "PACF"))
-plot(c1m4_acf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[4],
-     main = paste(names(c1.arima.models)[4], "ACF"))
-plot(c1m4_pacf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[4],
-     main = paste(names(c1.arima.models)[4], "PACF"))
-par(mfrow = c(1, 1)) 
+  c1m4_pacf <- pacf(resid(c1.arima.models[[4]]),
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  
+  
+  par(mfrow = c(4, 2)) 
+  plot(c1m1_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(c1.arima.models)[1], "ACF"))
+  plot(c1m1_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(c1.arima.models)[1], "PACF"))
+  plot(c1m2_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(c1.arima.models)[2], "ACF"))
+  plot(c1m2_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(c1.arima.models)[2], "PACF"))
+  plot(c1m3_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(c1.arima.models)[3], "ACF"))
+  plot(c1m3_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(c1.arima.models)[3], "PACF"))
+  plot(c1m4_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[4],
+       main = paste(names(c1.arima.models)[4], "ACF"))
+  plot(c1m4_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[4],
+       main = paste(names(c1.arima.models)[4], "PACF"))
+  par(mfrow = c(1, 1)) 
+}
 
 
 AIC(c1.arima.4.1.4, c1.arima.7.1.7, c1.auto.AIC, c1.auto.BIC)
@@ -347,13 +310,20 @@ BIC(c1.arima.4.1.4, c1.arima.7.1.7, c1.auto.AIC, c1.auto.BIC)
 # c1.auto.BIC     1 -1221.348 <- the best
 
 coeftest(c1.auto.AIC)
+# Estimate Std. Error z value  Pr(>|z|)    
+# ar1 -0.78829    0.15365 -5.1306 2.888e-07 ***
+# ma1  0.69842    0.17832  3.9167 8.976e-05 ***
 
 
-# ---------------------------------------------------------------------------------------------------------------------------
+# save model
+saveRDS(c1.auto.AIC, "./data/c1.arima111.rds")
+
+
+
 # -------------------------------------------------- DOGECOIN ---------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------------------------------------
 
-# ---- C2 - ARIMA 1
+# ------------------------------------------------------------------------- C2 - ARIMA 1
+
 c2.arima.4.1.4 <- Arima(crypto_pair[,2],
                         order = c(4, 1, 4),
                         method = "CSS-ML",
@@ -362,37 +332,17 @@ c2.arima.4.1.4 <- Arima(crypto_pair[,2],
 )
 
 coeftest(c2.arima.4.1.4)
-# z test of coefficients:
-#     
 #     Estimate Std. Error z value  Pr(>|z|)    
 # ar1  1.163539   0.380942  3.0544 0.0022553 ** 
-#     ar2  0.232257   0.398564  0.5827 0.5600727    
+# ar2  0.232257   0.398564  0.5827 0.5600727    
 # ar3 -0.997796   0.210271 -4.7453 2.082e-06 ***
-#     ar4  0.290874   0.277646  1.0476 0.2948021    
+# ar4  0.290874   0.277646  1.0476 0.2948021    
 # ma1 -1.331229   0.370338 -3.5946 0.0003248 ***
-#     ma2  0.030766   0.447703  0.0687 0.9452129    
+# ma2  0.030766   0.447703  0.0687 0.9452129    
 # ma3  0.941354   0.232510  4.0487 5.151e-05 ***
-#     ma4 -0.374865   0.227537 -1.6475 0.0994585 .  
+# ma4 -0.374865   0.227537 -1.6475 0.0994585 .  
 
   
-# ---
-#     Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-summary(c2.arima.4.1.4)
-# Series: crypto_pair[, 2] 
-# ARIMA(4,1,4) 
-# 
-# Coefficients:
-#     ar1     ar2      ar3     ar4      ma1     ma2     ma3      ma4
-# 1.1635  0.2323  -0.9978  0.2909  -1.3312  0.0308  0.9414  -0.3749
-# s.e.  0.3809  0.3986   0.2103  0.2776   0.3703  0.4477  0.2325   0.2275
-# 
-# sigma^2 estimated as 0.001382:  log likelihood=685.57
-# AIC=-1353.15   AICc=-1352.64   BIC=-1318.07
-# 
-# Training set error measures:
-#     ME       RMSE        MAE         MPE      MAPE      MASE       ACF1
-# Training set -0.0006492038 0.03671998 0.02420226 0.009008764 0.4036058 0.9950031 0.00408129
-
 par(mfrow = c(2, 1)) 
 acf(resid(c2.arima.4.1.4),
     lag.max = 14, 
@@ -415,7 +365,7 @@ Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 14)
 Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 21)
 Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
-# ---- C2 - ARIMA 2 
+# ------------------------------------------------------------------------ C2 - ARIMA 2 
 
 c2.arima.7.1.7 <- Arima(crypto_pair[,2],
                         order = c(7, 1, 7),
@@ -423,8 +373,6 @@ c2.arima.7.1.7 <- Arima(crypto_pair[,2],
                         optim.control = list(maxit = 2500),
                         optim.method = "L-BFGS-B"
 )
-
-# adfTest(crypto_pair[,2])
 
 coeftest(c2.arima.7.1.7)
 # z test of coefficients:
@@ -434,30 +382,15 @@ coeftest(c2.arima.7.1.7)
 # ar3  0.213500         NA      NA       NA    
 # ar4 -0.447693         NA      NA       NA    
 # ar5 -0.497539   0.204011 -2.4388  0.01474 *  
-#     ar6  0.278029         NA      NA       NA    
+# ar6  0.278029         NA      NA       NA    
 # ar7 -0.169363   0.266208 -0.6362  0.52464    
 # ma1 -0.434558         NA      NA       NA    
 # ma2 -0.170179   0.383752 -0.4435  0.65743    
 # ma3 -0.262637   0.029853 -8.7978  < 2e-16 ***
-#     ma4  0.640103         NA      NA       NA    
+# ma4  0.640103         NA      NA       NA    
 # ma5  0.366586   0.215851  1.6983  0.08945 .  
 # ma6 -0.395326         NA      NA       NA    
 # ma7  0.201267   0.221831  0.9073  0.36425    
-summary(c1.arima.7.1.7)
-# Series: crypto_pair[, 1] 
-# ARIMA(7,1,7) 
-# 
-# Coefficients:
-#     ar1     ar2     ar3      ar4     ar5     ar6      ar7      ma1      ma2      ma3     ma4     ma5      ma6     ma7
-# 0.1160  0.3969  0.2527  -0.2547  -0.612  0.2196  -0.1306  -0.2081  -0.3852  -0.2826  0.4404  0.6149  -0.3656  0.0676
-# s.e.  0.9087  1.1313  0.2873   0.2263     NaN  0.8801   0.5965   0.8625   0.9876   0.3038  0.1040  0.2013   0.9714  0.5178
-# 
-# sigma^2 estimated as 0.001973:  log likelihood=623.57
-# AIC=-1217.15   AICc=-1215.77   BIC=-1158.69
-# 
-# Training set error measures:
-#     ME       RMSE        MAE         MPE      MAPE     MASE        ACF1
-# Training set 0.0006248397 0.04349936 0.02731788 0.005557276 0.3017542 1.001517 -0.01950915
 
 
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag =  4)
@@ -466,6 +399,7 @@ Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
+# ------------------------------------------------------------------------ C2 - ARIMA 3 
 
 c2.auto.AIC <- auto.arima(crypto_pair[,2],
                           d = 1,             # parameter d of ARIMA model
@@ -507,6 +441,9 @@ Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag =  7)
 Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 28)
+
+
+# ------------------------------------------------------------------------ C2 - ARIMA 4 
 
 c2.auto.BIC <- auto.arima(crypto_pair[,2],
                           d = 1,             # parameter d of ARIMA model
@@ -550,7 +487,7 @@ Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag = 28)
 # THERE IS AN AUTOCORRELATION
 
 
-# models overview ------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------- models overview
 
 c2.arima.models <- list(c2.arima.4.1.4=c2.arima.4.1.4,
                         c2.arima.7.1.7=c2.arima.7.1.7, 
@@ -573,66 +510,69 @@ c2.Box_Ljung_df <- as.data.frame(c2.Box_Ljung_df)
 colnames(c2.Box_Ljung_df) <- c("L-B p-val 4d","L-B p-val 7d", "L-B p-val 14d", "L-B p-val 21d", "L-B p-val 28d")
 rownames(c2.Box_Ljung_df) <- names(c2.arima.models)
 
-plot_lags = 10
-colors = c("black", "red", "blue", "dark green")
-c1m1_acf <- acf(resid(c2.arima.models[[1]]),
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m1_pacf <- pacf(resid(c2.arima.models[[1]]), 
-                  lag.max = plot_lags, 
+if(1){
+  plot_lags = 10
+  colors = c("black", "red", "blue", "dark green")
+  c1m1_acf <- acf(resid(c2.arima.models[[1]]),
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c1m2_acf <- acf(resid(c2.arima.models[[2]]),
-                lag.max = plot_lags, 
-                plot = FALSE,
-                na.action = na.pass)
-c1m2_pacf <- pacf(resid(c2.arima.models[[2]]),
+                  na.action = na.pass)   
+  c1m1_pacf <- pacf(resid(c2.arima.models[[1]]), 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c1m2_acf <- acf(resid(c2.arima.models[[2]]),
                   lag.max = plot_lags, 
                   plot = FALSE,
                   na.action = na.pass)
-c1m3_acf <- acf(resid(c2.arima.models[[3]]),
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m3_pacf <- pacf(resid(c2.arima.models[[3]]), 
-                  lag.max = plot_lags, 
+  c1m2_pacf <- pacf(resid(c2.arima.models[[2]]),
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c1m3_acf <- acf(resid(c2.arima.models[[3]]),
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
+                  na.action = na.pass)   
+  c1m3_pacf <- pacf(resid(c2.arima.models[[3]]), 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  
+  
+  par(mfrow = c(length(c2.arima.models), 2)) 
+  plot(c1m1_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(c2.arima.models)[1], "ACF"))
+  plot(c1m1_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(c2.arima.models)[1], "PACF"))
+  plot(c1m2_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(c2.arima.models)[2], "ACF"))
+  plot(c1m2_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(c2.arima.models)[2], "PACF"))
+  plot(c1m3_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(c2.arima.models)[3], "ACF"))
+  plot(c1m3_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(c2.arima.models)[3], "PACF"))
+  par(mfrow = c(1, 1)) 
+}
 
-
-par(mfrow = c(length(c2.arima.models), 2)) 
-plot(c1m1_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(c2.arima.models)[1], "ACF"))
-plot(c1m1_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(c2.arima.models)[1], "PACF"))
-plot(c1m2_acf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(c2.arima.models)[2], "ACF"))
-plot(c1m2_pacf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(c2.arima.models)[2], "PACF"))
-plot(c1m3_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(c2.arima.models)[3], "ACF"))
-plot(c1m3_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(c2.arima.models)[3], "PACF"))
-par(mfrow = c(1, 1)) 
 
 
 AIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC)
@@ -648,14 +588,9 @@ BIC(c2.arima.4.1.4, c2.arima.7.1.7, c2.auto.AIC)
 # c2.auto.AIC     2 -1345.683 <- 
 # c2.auto.BIC     2 -1345.683
 
-
 coeftest(c2.auto.AIC)
-# z test of coefficients:
-#   
 #   Estimate Std. Error z value Pr(>|z|)   
 # ar1 -0.156974   0.051885 -3.0254 0.002483 **
-#   ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-
-
+# save model
+saveRDS(c2.auto.AIC, "./data/c2.arima110.rds")

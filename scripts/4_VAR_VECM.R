@@ -3,29 +3,36 @@ library(forecast)
 library(lmtest)
 library(vars)
 
+# laod function for data processing
 source("functions/finding_stationary_pair.R")
 
 # ---------------------------------------------------- PREPARE DATA ---------------------------------------------------------------------------
 
-# # get data with differences and log prices
-# crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
-#                                      n_table = 36,                                    # which pair to prepare plots for
-#                                      n_obs_is = 365,                                  # how many observations in scope
-#                                      n_obs_ooc = 15,                                  # number of observations out of scope
-#                                      clipped = all_combinations_cointegr3$pairs_data, # list with data after 
-#                                      # crypto_list = crypto_list,
-#                                      log_prices = TRUE
-# )
-# crypto_pair <- crypto_pair_all$in_smpl
+# load results of contegration checks
+all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
+cointegr_tb_signf <- readRDS("./data/cointegr_tb_signf_5_7.RDS")
+
+# get data with differences and log prices
+crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
+                                 n_table = 6,                                    # which pair to prepare plots for
+                                 n_obs_is = 365,                                 # how many observations in scope
+                                 n_obs_ooc = 15,                                 # number of observations out of scope
+                                 clipped = all_combinations_cointegr$pairs_data, # list with data after 
+                                 # crypto_list = crypto_list,
+                                 log_prices = TRUE)
+
+# in sample data and out of sample data
+crypto_pair <- crypto_pair_all$in_smpl
 crypto_pair_oos <- crypto_pair_all$oo_smpl
 
+# set samef used further
+names_ <- c("Bitcoin", "Dogecoin")
 
 # ------------------------------------------------- VAR MODEL ------------------------------------------------------------------------------
 # selection without seasons
 VARselect(crypto_pair[,1:2], 
           lag.max = 14
           )
-
 # AIC(n)  HQ(n)  SC(n) FPE(n)  # 3
 # 2      2      1      2 
 
@@ -34,111 +41,80 @@ VARselect(crypto_pair[,1:2],
 VARselect(crypto_pair[,1:2],
           lag.max = 14,     
           season = 7)     
-
 # AIC(n)  HQ(n)  SC(n) FPE(n) 
 # 2      2      1      2 
 
-# ------------------------------ 
+
+# ------------------------------------------------------------------------------------------------- VAR(2) seasons
 # VAR model with 7 lags and seasons
-crypto_pair.VAR.s <- VAR(crypto_pair[,1:2],
+crypto_pair.VAR.2.s <- VAR(crypto_pair[,1:2],
                          p = 2,
                          season = 7) 
-
-summary(crypto_pair.VAR.s) ## you rarely interpet interpret ## ~44:00
+coeftest(crypto_pair.VAR.2.s) 
+# Estimate Std. Error t value  Pr(>|t|)    
+# log_bitcoin:(Intercept)       1.0412294  0.3774984  2.7582  0.006115 ** 
+# log_bitcoin:log_bitcoin.l1    0.7884612  0.0807611  9.7629 < 2.2e-16 ***
+# log_bitcoin:log_dogecoin.l1   0.1338445  0.0949541  1.4096  0.159549    
+# log_bitcoin:log_bitcoin.l2    0.1355802  0.0797982  1.6990  0.090196 .  
+# log_bitcoin:log_dogecoin.l2  -0.0752495  0.0940413 -0.8002  0.424149    
+# log_bitcoin:sd1               0.0135140  0.0086678  1.5591  0.119873    
+# log_bitcoin:sd2               0.0057569  0.0087254  0.6598  0.509822    
+# log_bitcoin:sd3               0.0133102  0.0086742  1.5344  0.125818    
+# log_bitcoin:sd4               0.0019654  0.0086808  0.2264  0.821014    
+# log_bitcoin:sd5               0.0147465  0.0086647  1.7019  0.089657 .  
+# log_bitcoin:sd6               0.0045658  0.0087024  0.5247  0.600146    
+# log_dogecoin:(Intercept)      0.0682763  0.3172407  0.2152  0.829721    
+# log_dogecoin:log_bitcoin.l1  -0.1654688  0.0678697 -2.4380  0.015261 *  
+# log_dogecoin:log_dogecoin.l1  0.9816156  0.0797971 12.3014 < 2.2e-16 ***
+# log_dogecoin:log_bitcoin.l2   0.1513172  0.0670605  2.2564  0.024657 *  
+# log_dogecoin:log_dogecoin.l2  0.0084183  0.0790301  0.1065  0.915230    
+# log_dogecoin:sd1              0.0010692  0.0072842  0.1468  0.883384    
+# log_dogecoin:sd2             -0.0038166  0.0073326 -0.5205  0.603042    
+# log_dogecoin:sd3              0.0013319  0.0072896  0.1827  0.855124    
+# log_dogecoin:sd4             -0.0031196  0.0072951 -0.4276  0.669186    
+# log_dogecoin:sd5              0.0124699  0.0072816  1.7125  0.087681 .  
+# log_dogecoin:sd6              0.0013016  0.0073133  0.1780  0.858838   
 # seasons are not significant
 
-#--------------------
-# ============================================ 
-#   log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const + sd1 + sd2 + sd3 + sd4 + sd5 + sd6 
-# 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1   0.788461   0.080761   9.763  < 2e-16 ***
-# log_dogecoin.l1  0.133845   0.094954   1.410  0.15955    
-# log_bitcoin.l2   0.135580   0.079798   1.699  0.09020 .  
-# log_dogecoin.l2 -0.075250   0.094041  -0.800  0.42415    
-# const            1.041229   0.377498   2.758  0.00611 ** 
-# sd1              0.013514   0.008668   1.559  0.11987    
-# sd2              0.005757   0.008725   0.660  0.50982    
-# sd3              0.013310   0.008674   1.534  0.12582    
-# sd4              0.001965   0.008681   0.226  0.82101    
-# sd5              0.014746   0.008665   1.702  0.08966 .  
-# sd6              0.004566   0.008702   0.525  0.60015 
+serial.test(crypto_pair.VAR.2.s, type = "BG") 
+# p-value = 0.5112 <- NO AUTOCORRELATION
 
-# log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const + sd1 + sd2 + sd3 + sd4 + sd5 + sd6 
-# 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1  -0.165469   0.067870  -2.438   0.0153 *  
-# log_dogecoin.l1  0.981616   0.079797  12.301   <2e-16 ***
-# log_bitcoin.l2   0.151317   0.067061   2.256   0.0247 *  
-# log_dogecoin.l2  0.008418   0.079030   0.107   0.9152    
-# const            0.068276   0.317241   0.215   0.8297    
-# sd1              0.001069   0.007284   0.147   0.8834    
-# sd2             -0.003817   0.007333  -0.521   0.6030    
-# sd3              0.001332   0.007290   0.183   0.8551    
-# sd4             -0.003120   0.007295  -0.428   0.6692    
-# sd5              0.012470   0.007282   1.713   0.0877 .  
-# sd6              0.001302   0.007313   0.178   0.8588    
+serial.test(crypto_pair.VAR.2.s) 
+# p-value = 0.04946 <- AUTOCORRELATION!!!
 
-  
-# AIC(crypto_pair.var2, crypto_pair.var2s)
-# BIC(crypto_pair.var2, crypto_pair.var2s)
-# -------------------------------------------------------------------------------------------------------------------------------
+plot(crypto_pair.VAR.2.s)
+
+# ------------------------------------------------------------------------------------------------- VAR(2)
 # model without seasonality component
-crypto_pair.VAR <- VAR(crypto_pair[,1:2], 
+crypto_pair.VAR.2 <- VAR(crypto_pair[,1:2], 
                         p = 2)
 
-summary(crypto_pair.VAR)
-# log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const 
-# 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1   0.77934    0.07993   9.750  < 2e-16 ***
-# log_dogecoin.l1  0.13046    0.09373   1.392  0.16482    
-# log_bitcoin.l2   0.14408    0.07895   1.825  0.06884 .  
-# log_dogecoin.l2 -0.07137    0.09279  -0.769  0.44233    
-# const            1.04993    0.37721   2.783  0.00566 ** 
-#   ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-  
-# log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const 
-# 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1  -0.176360   0.067228  -2.623  0.00908 ** 
-# log_dogecoin.l1  0.985004   0.078834  12.495  < 2e-16 ***
-# log_bitcoin.l2   0.162923   0.066403   2.454  0.01462 *  
-# log_dogecoin.l2  0.004235   0.078043   0.054  0.95675    
-# const            0.057055   0.317262   0.180  0.85738  
-  
+coeftest(crypto_pair.VAR.2)
+#                                Estimate Std. Error t value  Pr(>|t|)    
+# log_bitcoin:(Intercept)       1.0499325  0.3772064  2.7834  0.005664 ** 
+# log_bitcoin:log_bitcoin.l1    0.7793363  0.0799301  9.7502 < 2.2e-16 ***
+# log_bitcoin:log_dogecoin.l1   0.1304599  0.0937294  1.3919  0.164823    
+# log_bitcoin:log_bitcoin.l2    0.1440768  0.0789488  1.8249  0.068844 .  
+# log_bitcoin:log_dogecoin.l2  -0.0713651  0.0927883 -0.7691  0.442331    
+# log_dogecoin:(Intercept)      0.0570554  0.3172618  0.1798  0.857382    
+# log_dogecoin:log_bitcoin.l1  -0.1763602  0.0672279 -2.6233  0.009080 ** 
+# log_dogecoin:log_dogecoin.l1  0.9850040  0.0788342 12.4946 < 2.2e-16 ***
+# log_dogecoin:log_bitcoin.l2   0.1629226  0.0664025  2.4536  0.014621 *  
+# log_dogecoin:log_dogecoin.l2  0.0042349  0.0780427  0.0543  0.956755   
+# significance the same as in summary of the model
 
-serial.test(crypto_pair.VAR) ## 57:00+
-# data:  Residuals of VAR object crypto_pair.var2
-# Chi-squared = 73.469, df = 56, p-value = 0.05864
+serial.test(crypto_pair.VAR.2, type = "BG") 
+# p-value = 0.5348 <- NO AUTOCORRELATION
 
-serial.test(crypto_pair.VAR, type = "BG") # The null hypothesis is that there is no serial correlation of any order up to p.
-# data:  Residuals of VAR object crypto_pair.var2
-# Chi-squared = 18.8, df = 20, p-value = 0.5348
+serial.test(crypto_pair.VAR.2) 
+# p-value = 0.05864 <- NO AUTOCORRELATION at 5%, but Ho almost on edge
 
 
 # lets do some basic diagnostics
-plot(crypto_pair.VAR)
+plot(crypto_pair.VAR.2)
 # no autocorrelation
 
-
-# ------------------ restricted VAR 1
-# automatic restriction, based on first model with seasonality
-restrict(crypto_pair.VAR.s, method = "ser")
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1  -0.176360   0.067228  -2.623  0.00908 ** 
-# log_dogecoin.l1  0.985004   0.078834  12.495  < 2e-16 ***
-# log_bitcoin.l2   0.162923   0.066403   2.454  0.01462 *  
-# log_dogecoin.l2  0.004235   0.078043   0.054  0.95675    
-# const            0.057055   0.317262   0.180  0.85738   
-
-# log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const 
-# log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + const
-# restrict <- matrix(c(1, 1, 1, 1, 1, 1, 1,
-#                      1, 0, 1, 0, 0, 1, 0),
-#                    nrow=2, ncol=7, byrow=TRUE)
-
+# ------------------------------------------------------------------------------------------------- restricted VAR 1 
 
 # The Granger causality results showed the bi-directional feedback on 5% level.
 casuality <- readRDS("./data/gr_casual_dl_bitcoin_dl_dogecoin.RDS")
@@ -151,11 +127,8 @@ casuality <- readRDS("./data/gr_casual_dl_bitcoin_dl_dogecoin.RDS")
 # 6    6                  0.104423762200012           no                  0.330259651129534           no
 # 7    7                  0.102145814485695           no                 0.0892475545984026           no
 
-# for bittorrent granger matches significance from model
-# for litecoin granger matches almost significance from model, lags 1,2,3 are significant up to 10%, but granger for 2nd lag is also around the bodrer 
 
- 
-# only GRANGER
+# restrict in accordance to Granger and crypto_pair.VAR.2 parameters significance
 restrict1 <- matrix(c(1, 0, 1, 0, 1, # dep log_bitcoin 
                       1, 1, 1, 0, 0), # dep-log_dogecoin 
                    nrow=2, ncol=5, byrow=TRUE) # only GC
@@ -164,349 +137,293 @@ crypto_pair.VAR.restr1 <- restrict(crypto_pair.VAR, method = "man", resmat = res
 summary(crypto_pair.VAR.restr1)
 # log_bitcoin = log_bitcoin.l1 + log_bitcoin.l2 + const 
 # 
-# Estimate Std. Error t value Pr(>|t|)    
+#                  Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1  0.87421    0.05250  16.650   <2e-16 ***
-#   log_bitcoin.l2  0.09634    0.05251   1.835   0.0674 .  
+# log_bitcoin.l2  0.09634    0.05251   1.835   0.0674 .  
 # const           0.26794    0.12243   2.188   0.0293 *     
   
 # log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 
 # 
-# Estimate Std. Error t value Pr(>|t|)    
+#                 Estimate Std. Error t value Pr(>|t|)    
 # log_bitcoin.l1  -0.175493   0.043450  -4.039 6.57e-05 ***
-#   log_dogecoin.l1  0.985408   0.007259 135.749  < 2e-16 ***
-#   log_bitcoin.l2   0.165813   0.043804   3.785  0.00018 ***
+# log_dogecoin.l1  0.985408   0.007259 135.749  < 2e-16 ***
+# log_bitcoin.l2   0.165813   0.043804   3.785  0.00018 ***
+
+coeftest(crypto_pair.VAR.restr1)
+# Estimate Std. Error t value  Pr(>|t|)    
+# log_bitcoin:(Intercept)       1.0499325  0.3772064  2.7834  0.005664 ** 
+# log_bitcoin:log_bitcoin.l1    0.7793363  0.0799301  9.7502 < 2.2e-16 ***
+# log_bitcoin:log_dogecoin.l1   0.1304599  0.0937294  1.3919  0.164823    
+# log_bitcoin:log_bitcoin.l2    0.1440768  0.0789488  1.8249  0.068844 .  
+# log_bitcoin:log_dogecoin.l2  -0.0713651  0.0927883 -0.7691  0.442331    
+# log_dogecoin:(Intercept)      0.0570554  0.3172618  0.1798  0.857382    
+# log_dogecoin:log_bitcoin.l1  -0.1763602  0.0672279 -2.6233  0.009080 ** 
+# log_dogecoin:log_dogecoin.l1  0.9850040  0.0788342 12.4946 < 2.2e-16 ***
+# log_dogecoin:log_bitcoin.l2   0.1629226  0.0664025  2.4536  0.014621 *  
+# log_dogecoin:log_dogecoin.l2  0.0042349  0.0780427  0.0543  0.956755  
 
 serial.test(crypto_pair.VAR.restr1, type = "BG") 
-# data:  Residuals of VAR object crypto_pair.var2_restr1
-# Chi-squared = 23.937, df = 20, p-value = 0.2451
+#p-value = 0.2451 <- NO AUTOCORRELATION
+
 serial.test(crypto_pair.VAR.restr1) 
-# data:  Residuals of VAR object crypto_pair.var2_restr1
-# Chi-squared = 80.553, df = 56, p-value = 0.01748
+ # p-value = 0.01748 <- AUTOCORRELATION!!!
 
 plot(crypto_pair.VAR.restr1)
-# although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
+# although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals. 
 
-# ------------------------------ 
+# ------------------------------------------------------------------------------------------------- VAR(4)
 crypto_pair.VAR.4 <- VAR(crypto_pair[,1:2],
                          p = 4) 
-summary(crypto_pair.VAR.4)
-# log_bitcoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + log_bitcoin.l3 + log_dogecoin.l3 + 
-# log_bitcoin.l4 + log_dogecoin.l4 + const 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1   0.767829   0.080944   9.486  < 2e-16 ***
-# log_dogecoin.l1  0.161117   0.096249   1.674  0.09503 .  
-# log_bitcoin.l2   0.236635   0.111459   2.123  0.03444 *
-# const            1.128327   0.396847   2.843  0.00473 ** 
-  
-# log_dogecoin = log_bitcoin.l1 + log_dogecoin.l1 + log_bitcoin.l2 + log_dogecoin.l2 + log_bitcoin.l3 + log_dogecoin.l3 +
-#   log_bitcoin.l4 + log_dogecoin.l4 + const 
-# Estimate Std. Error t value Pr(>|t|)    
-# log_bitcoin.l1  -0.18502    0.06782  -2.728  0.00669 ** 
-#   log_dogecoin.l1  1.01137    0.08064  12.542  < 2e-16 ***
-#   log_bitcoin.l2   0.27613    0.09338   2.957  0.00332 ** 
+coeftest(crypto_pair.VAR.4)
+#                             Estimate Std. Error t value  Pr(>|t|)    
+# log_bitcoin:(Intercept)       1.1283272  0.3968467  2.8432  0.004727 ** 
+# log_bitcoin:log_bitcoin.l1    0.7678287  0.0809437  9.4860 < 2.2e-16 ***
+# log_bitcoin:log_dogecoin.l1   0.1611169  0.0962487  1.6740  0.095026 .  
+# log_bitcoin:log_bitcoin.l2    0.2366355  0.1114586  2.1231  0.034445 *  
+# log_bitcoin:log_dogecoin.l2  -0.1147370  0.1305521 -0.8789  0.380077    
+# log_bitcoin:log_bitcoin.l3   -0.0939306  0.1123318 -0.8362  0.403616    
+# log_bitcoin:log_dogecoin.l3  -0.0197442  0.1282511 -0.1539  0.877738    
+# log_bitcoin:log_bitcoin.l4    0.0073233  0.0802469  0.0913  0.927338    
+# log_bitcoin:log_dogecoin.l4   0.0371224  0.0934796  0.3971  0.691521    
+# log_dogecoin:(Intercept)      0.1041522  0.3324808  0.3133  0.754270    
+# log_dogecoin:log_bitcoin.l1  -0.1850195  0.0678151 -2.7283  0.006686 ** 
+# log_dogecoin:log_dogecoin.l1  1.0113690  0.0806378 12.5421 < 2.2e-16 ***
+# log_dogecoin:log_bitcoin.l2   0.2761336  0.0933808  2.9571  0.003315 ** 
+# log_dogecoin:log_dogecoin.l2 -0.0372705  0.1093774 -0.3408  0.733494    
+# log_dogecoin:log_bitcoin.l3  -0.0435566  0.0941124 -0.4628  0.643783    
+# log_dogecoin:log_dogecoin.l3 -0.0639158  0.1074496 -0.5948  0.552329    
+# log_dogecoin:log_bitcoin.l4  -0.0654557  0.0672314 -0.9736  0.330930    
+# log_dogecoin:log_dogecoin.l4  0.0801891  0.0783179  1.0239  0.306589   
+# significance the same as in summary of the model
 
 serial.test(crypto_pair.VAR.4, type = "BG") 
+# p-value = 0.4784 <- no autocorrelation
 
-# ------------------ restricted VAR 2
-
-# # Granger and first VAR model restriction
-# restrict2 <- matrix(c(1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, # ind-cardano
-#                       0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1), # ind-siacoin
-#                     nrow=2, ncol=13, byrow=TRUE)
-# 
-# # lags d_siacoin_d_cardano if_granger_1 
-# #    1   0.276727171250911           no 
-# #    2  0.0307660109222102        cause 
-# #    3   0.045346250988177        cause 
-# #    4  0.0929440887878814           no 
-# #    5   0.105121398655361           no 
-# #    6  0.0316361829048299        cause 
-# #    7 0.00319632534714409        cause 
-# 
-# 
-# # cardano = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
-# #   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const
-# # cardano.l1  0.9942175  0.0694343  14.319  < 2e-16 ***
-# # siacoin.l1 -2.8090025  1.4808967  -1.897  0.05868 .  
-# # cardano.l3 -0.2557171  0.0938754  -2.724  0.00678 ** 
-# # cardano.l4  0.1699510  0.0931632   1.824  0.06898 .  
-# # const       0.0010819  0.0004515   2.397  0.01708 *  
-# 
-# # siacoin = cardano.l1 + siacoin.l1 + cardano.l2 + siacoin.l2 + cardano.l3 + siacoin.l3 + 
-# #   cardano.l4 + siacoin.l4 + cardano.l5 + siacoin.l5 + cardano.l6 + siacoin.l6 + const 
-# # cardano.l1  5.653e-03  3.235e-03   1.748   0.0814 .  
-# # siacoin.l1  7.800e-01  6.899e-02  11.307   <2e-16 ***
-# # cardano.l3 -8.475e-03  4.373e-03  -1.938   0.0534 .  
-# # siacoin.l3  2.084e-01  9.153e-02   2.276   0.0234 *  
-# # siacoin.l6 -1.422e-01  6.865e-02  -2.072   0.0390 *  
-# # const       4.546e-05  2.103e-05   2.161   0.0314 *  
-# 
-# crypto_pair.var6_restr2 <- restrict(crypto_pair.var6, method = "man", resmat = restrict2)
-# summary(crypto_pair.var6_restr2)
-# 
-# # cardano = cardano.l1 + siacoin.l1 + cardano.l3 + cardano.l4 + const 
-# # cardano.l1  1.0086771  0.0400269  25.200  < 2e-16 ***
-# # siacoin.l1 -1.4883032  0.5434007  -2.739  0.00648 ** 
-# # cardano.l3 -0.1091386  0.0634560  -1.720  0.08632 .  
-# # cardano.l4  0.1378062  0.0519236   2.654  0.00831 ** 
-# # const       0.0010980  0.0004418   2.485  0.01340 *  
-# 
-# # siacoin.l1  8.747e-01  3.967e-02  22.050  < 2e-16 ***
-# # cardano.l3  2.967e-03  9.784e-04   3.033  0.00260 ** 
-# # siacoin.l3  1.136e-01  5.046e-02   2.252  0.02491 *  
-# # siacoin.l6 -8.486e-02  3.234e-02  -2.624  0.00906 ** 
-# # const       4.749e-05  2.089e-05   2.273  0.02363 * 
-# 
-# serial.test(crypto_pair.var6_restr2, type = "BG") 
-# # data:  Residuals of VAR object crypto_pair.var6_restr2
-# # Chi-squared = 35.334, df = 20, p-value = 0.0184
-# serial.test(crypto_pair.var6_restr2) 
-# # data:  Residuals of VAR object crypto_pair.var6_restr2
-# # Chi-squared = 80.197, df = 40, p-value = 0.0001671
-# 
-# plot(crypto_pair.var6_restr2)
-# # although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
-# The null hypothesis is: H_0: B_1 = … = B_h = 0 
- 
-var.models <- list(var.2.s=crypto_pair.VAR.s, var.2=crypto_pair.VAR, var.restricted=crypto_pair.VAR.restr1, var.4=crypto_pair.VAR.4)
 
+# list of VAR model
+var.models <- list(var.2.s=crypto_pair.VAR.2.s, var.2=crypto_pair.VAR.2, var.restricted=crypto_pair.VAR.restr1, var.4=crypto_pair.VAR.4)
+
+# Breusch-Godfrey test for autocorrelation of residuals up to 2,7,14 and 18 days, The null hypothesis is: H_0: B_1 = … = B_h = 0 
 var.BG_df <- c()
-
 for(i in 1:length(var.models)){
-  
   BG0 <- round(serial.test(var.models[[i]], type = "BG", lags.bg = 2)$serial$p.value, 3)
   BG1 <- round(serial.test(var.models[[i]], type = "BG", lags.bg = 7)$serial$p.value, 3)
   BG2 <- round(serial.test(var.models[[i]], type = "BG", lags.bg = 14)$serial$p.value, 3)
   BG3 <- round(serial.test(var.models[[i]], type = "BG", lags.bg = 21)$serial$p.value, 3)
   BG4 <- round(serial.test(var.models[[i]], type = "BG", lags.bg = 28)$serial$p.value, 3)
-  
   var.BG_df <- rbind(var.BG_df, c(BG0,BG1,BG2,BG3,BG4))
 }
 var.BG_df <- as.data.frame(var.BG_df)
 colnames(var.BG_df) <- c("B-G p-val 2d","B-G p-val 7d", "B-G p-val 14d", "B-G p-val 21d", "B-G p-val 28d")
 rownames(var.BG_df) <- names(var.models)
 
+#                 B-G p-val 2d B-G p-val 7d B-G p-val 14d B-G p-val 21d B-G p-val 28d
+# var.2.s               0.465        0.395         0.064         0.379         0.699
+# var.2                 0.428        0.466         0.063         0.383         0.721
+# var.restricted        0.376        0.298         0.029         0.237         0.541
+# var.4                 0.424        0.475         0.125         0.487         0.787
 
-plot_lags = 7
-colors = c("black", "red", "blue", "dark green")
-c1m1_acf <- acf(resid(var.models[[1]])[,1],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m1_pacf <- pacf(resid(var.models[[1]])[,1], 
-                  lag.max = plot_lags, 
+# get ACF and PACF plot of models
+if(1){
+  plot_lags = 7
+  colors = c("black", "red", "blue", "dark green")
+  c1m1_acf <- acf(resid(var.models[[1]])[,1],
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c2m1_acf <- acf(resid(var.models[[1]])[,2],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c2m1_pacf <- pacf(resid(var.models[[1]])[,2], 
+                  na.action = na.pass)   
+  c1m1_pacf <- pacf(resid(var.models[[1]])[,1], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c2m1_acf <- acf(resid(var.models[[1]])[,2],
+                  lag.max = plot_lags,
+                  plot = FALSE,
+                  na.action = na.pass)   
+  c2m1_pacf <- pacf(resid(var.models[[1]])[,2], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c1m2_acf <- acf(resid(var.models[[2]])[,1],
                   lag.max = plot_lags, 
                   plot = FALSE,
                   na.action = na.pass)
-c1m2_acf <- acf(resid(var.models[[2]])[,1],
-                lag.max = plot_lags, 
-                plot = FALSE,
-                na.action = na.pass)
-c1m2_pacf <- pacf(resid(var.models[[2]])[,1],
+  c1m2_pacf <- pacf(resid(var.models[[2]])[,1],
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c2m2_acf <- acf(resid(var.models[[2]])[,2],
                   lag.max = plot_lags, 
                   plot = FALSE,
                   na.action = na.pass)
-c2m2_acf <- acf(resid(var.models[[2]])[,2],
-                lag.max = plot_lags, 
-                plot = FALSE,
-                na.action = na.pass)
-c2m2_pacf <- pacf(resid(var.models[[2]])[,2],
-                  lag.max = plot_lags, 
+  c2m2_pacf <- pacf(resid(var.models[[2]])[,2],
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c1m3_acf <- acf(resid(var.models[[3]])[,1],
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass)
-c1m3_acf <- acf(resid(var.models[[3]])[,1],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m3_pacf <- pacf(resid(var.models[[3]])[,1], 
-                  lag.max = plot_lags, 
+                  na.action = na.pass)   
+  c1m3_pacf <- pacf(resid(var.models[[3]])[,1], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c2m3_acf <- acf(resid(var.models[[3]])[,2],
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c2m3_acf <- acf(resid(var.models[[3]])[,2],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)  
-c2m3_pacf <- pacf(resid(var.models[[3]])[,2], 
-                  lag.max = plot_lags, 
+                  na.action = na.pass)  
+  c2m3_pacf <- pacf(resid(var.models[[3]])[,2], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass)
+  c1m4_acf <- acf(resid(var.models[[4]])[,1],
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass)
-c1m4_acf <- acf(resid(var.models[[4]])[,1],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c1m4_pacf <- pacf(resid(var.models[[4]])[,1], 
-                  lag.max = plot_lags, 
+                  na.action = na.pass)   
+  c1m4_pacf <- pacf(resid(var.models[[4]])[,1], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  c2m4_acf <- acf(resid(var.models[[4]])[,2],
+                  lag.max = plot_lags,
                   plot = FALSE,
-                  na.action = na.pass) 
-c2m4_acf <- acf(resid(var.models[[4]])[,2],
-                lag.max = plot_lags,
-                plot = FALSE,
-                na.action = na.pass)   
-c2m4_pacf <- pacf(resid(var.models[[4]])[,2], 
-                  lag.max = plot_lags, 
-                  plot = FALSE,
-                  na.action = na.pass) 
+                  na.action = na.pass)   
+  c2m4_pacf <- pacf(resid(var.models[[4]])[,2], 
+                    lag.max = plot_lags, 
+                    plot = FALSE,
+                    na.action = na.pass) 
+  
+  par(mfrow = c(length(var.models), 4)) 
+  plot(c1m1_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(var.models)[1], names_[1], "ACF"))
+  plot(c1m1_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(var.models)[1], names_[1], "PACF"))
+  plot(c2m1_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(var.models)[1], names_[2],"ACF"))
+  plot(c2m1_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(names(var.models)[1], names_[2],"PACF"))
+  plot(c1m2_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(var.models)[2], names_[1],"ACF"))
+  plot(c1m2_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(var.models)[2], names_[1],"PACF"))
+  plot(c2m2_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(var.models)[2], names_[2],"ACF"))
+  plot(c2m2_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(names(var.models)[2], names_[2],"PACF"))
+  plot(c1m3_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(var.models)[3], names_[1],"ACF"))
+  plot(c1m3_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(var.models)[3], names_[1],"PACF"))
+  plot(c2m3_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(var.models)[3], names_[2],"ACF"))
+  plot(c2m3_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[3],
+       main = paste(names(var.models)[3], names_[2],"PACF"))
+  plot(c1m4_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[4],
+       main = paste(names(var.models)[4], names_[1],"ACF"))
+  plot(c1m4_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[4],
+       main = paste(names(var.models)[4], names_[1],"PACF"))
+  plot(c2m4_acf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[4],
+       main = paste(names(var.models)[4], names_[2],"ACF"))
+  plot(c2m4_pacf, 
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[4],
+       main = paste(names(var.models)[4], names_[2],"PACF"))
+  par(mfrow = c(1, 1)) 
+  
+}
 
-# names_ <- c("Bitcoin", "Dogecoin") 
-par(mfrow = c(length(var.models), 4)) 
-plot(c1m1_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(var.models)[1], names_[1], "ACF"))
-plot(c1m1_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(var.models)[1], names_[1], "PACF"))
-plot(c2m1_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(var.models)[1], names_[2],"ACF"))
-plot(c2m1_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[1],
-     main = paste(names(var.models)[1], names_[2],"PACF"))
-plot(c1m2_acf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(var.models)[2], names_[1],"ACF"))
-plot(c1m2_pacf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(var.models)[2], names_[1],"PACF"))
-plot(c2m2_acf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(var.models)[2], names_[2],"ACF"))
-plot(c2m2_pacf,
-     ylim = c(-0.5, 0.5),
-     lwd = 5,
-     col = colors[2],
-     main = paste(names(var.models)[2], names_[2],"PACF"))
-plot(c1m3_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(var.models)[3], names_[1],"ACF"))
-plot(c1m3_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(var.models)[3], names_[1],"PACF"))
-plot(c2m3_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(var.models)[3], names_[2],"ACF"))
-plot(c2m3_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[3],
-     main = paste(names(var.models)[3], names_[2],"PACF"))
-plot(c1m4_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[4],
-     main = paste(names(var.models)[4], names_[1],"ACF"))
-plot(c1m4_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[4],
-     main = paste(names(var.models)[4], names_[1],"PACF"))
-plot(c2m4_acf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[4],
-     main = paste(names(var.models)[4], names_[2],"ACF"))
-plot(c2m4_pacf, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = colors[4],
-     main = paste(names(var.models)[4], names_[2],"PACF"))
-par(mfrow = c(1, 1)) 
+# comparison of information criteria for models
+AIC(crypto_pair.VAR.2.s, crypto_pair.VAR.2, crypto_pair.VAR.restr1, crypto_pair.VAR.4)
+BIC(crypto_pair.VAR.2.s, crypto_pair.VAR.2, crypto_pair.VAR.restr1, crypto_pair.VAR.4)
 
-
-
-coeftest(c1.auto.AIC)
-
-AIC(crypto_pair.VAR.s, crypto_pair.VAR, crypto_pair.VAR.restr1)
-BIC(crypto_pair.VAR.s, crypto_pair.VAR, crypto_pair.VAR.restr1)
-# > AIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
 # df       AIC
-# crypto_pair.var2s       22 -2880.934
-# crypto_pair.var2        10 -2889.614 <- 
-# crypto_pair.var2_restr1  6 -2885.135
-# > BIC(crypto_pair.var2s, crypto_pair.var2, crypto_pair.var2_restr1)
+# crypto_pair.VAR.s      22 -2880.934
+# crypto_pair.VAR        10 -2889.614 <- 
+# crypto_pair.VAR.restr1  6 -2885.135
+# crypto_pair.VAR.4      18 -2862.513
+
 # df       BIC
-# crypto_pair.var2s       22 -2795.257
-# crypto_pair.var2        10 -2850.670
-# crypto_pair.var2_restr1  6 -2861.768 <- 
-
-# AIC prefere the most restricted model, BIC the leastwhich makes sense, however due to correlation in residuals
-
-c1_var_acf <- acf(resid(crypto_pair.VAR)[,1],
-                  lag.max = 10,
-    plot = FALSE)   
-c1_var_pacf <- pacf(resid(crypto_pair.VAR)[,1], 
-     lag.max = 10, 
-     plot = FALSE) 
-c2_var_acf <- acf(resid(crypto_pair.VAR)[,2],
-    lag.max = 10, 
-    na.action = na.pass,
-    plot = FALSE)   
-c2_var_pacf <- pacf(resid(crypto_pair.VAR)[,2], 
-     lag.max = 10, 
-     na.action = na.pass,
-     plot = FALSE) 
-
-par(mfrow = c(2, 2)) 
-plot(c1_var_acf, 
-     main = "VAR bitcoing resid ACF",
-     lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green",
-     na.action = na.pass)
-plot(c2_var_acf,
-     main = "VAR bitcoing resid PACF",
-     lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green",
-     ann=FALSE,
-     na.action = na.pass,)
-plot(c1_var_pacf, 
-     main = "VAR dogecoin resid ACF",
-     lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green",
-     na.action = na.pass,)
-plot(c2_var_pacf, 
-     main = "VAR dogecoin resid PACF",
-     lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green",
-     na.action = na.pass,)
-par(mfrow = c(1, 1)) 
+# crypto_pair.VAR.s      22 -2795.257
+# crypto_pair.VAR        10 -2850.670
+# crypto_pair.VAR.restr1  6 -2861.768 <-  
+# crypto_pair.VAR.4      18 -2792.513
 
 
+# final model coefficients significance
+coeftest(crypto_pair.VAR.2)
+# Estimate Std. Error t value  Pr(>|t|)    
+# log_bitcoin:(Intercept)       1.0499325  0.3772064  2.7834  0.005664 ** 
+# log_bitcoin:log_bitcoin.l1    0.7793363  0.0799301  9.7502 < 2.2e-16 ***
+# log_bitcoin:log_dogecoin.l1   0.1304599  0.0937294  1.3919  0.164823    
+# log_bitcoin:log_bitcoin.l2    0.1440768  0.0789488  1.8249  0.068844 .  
+# log_bitcoin:log_dogecoin.l2  -0.0713651  0.0927883 -0.7691  0.442331    
+# log_dogecoin:(Intercept)      0.0570554  0.3172618  0.1798  0.857382    
+# log_dogecoin:log_bitcoin.l1  -0.1763602  0.0672279 -2.6233  0.009080 ** 
+# log_dogecoin:log_dogecoin.l1  0.9850040  0.0788342 12.4946 < 2.2e-16 ***
+# log_dogecoin:log_bitcoin.l2   0.1629226  0.0664025  2.4536  0.014621 *  
+# log_dogecoin:log_dogecoin.l2  0.0042349  0.0780427  0.0543  0.956755    
+# ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+# one can calculate and plot Impulse Response Functions
+irf_var <- irf(crypto_pair.VAR.2, 
+         n.ahead = 28)
+plot(irf_var)
+
+# and variance decomposition
+fevd_var <- fevd(crypto_pair.VAR.2, 
+                 n.ahead = 28)
+plot(fevd_var)
+
+# saveRDS(crypto_pair.VAR.2, "./data/crypto_pair_VAR2.rds")
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------- VECM ----------------------------------------------------------------------------------
@@ -546,36 +463,33 @@ get_pair_plot2(crypto_pair[,1:2], # dataframe or xts
 crypto_pair.vecm.1 <- cajorls(johan.test.eigen, r = 1) 
 
 summary(crypto_pair.vecm.1$rlm)
-# lm(formula = log_bitcoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 
-#      1, data = data.mat)
+# lm(formula = log_bitcoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 1, data = data.mat)
 #                   Estimate Std. Error t value Pr(>|t|)   
 # ect1             -0.06459    0.02392  -2.700  0.00725 **
-#   log_bitcoin.dl1  -0.22099    0.07996  -2.764  0.00601 **
-#   log_dogecoin.dl1  0.14323    0.09339   1.534  0.12599 
+# log_bitcoin.dl1  -0.22099    0.07996  -2.764  0.00601 **
+# log_dogecoin.dl1  0.14323    0.09339   1.534  0.12599 
 
-# lm(formula = log_dogecoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 
-#      1, data = data.mat)
+# lm(formula = log_dogecoin.d ~ ect1 + log_bitcoin.dl1 + log_dogecoin.dl1 - 1, data = data.mat)
 # Estimate Std. Error t value Pr(>|t|)   
 # ect1             -2.894e-05  2.017e-02  -0.001  0.99886   
 # log_bitcoin.dl1  -1.767e-01  6.742e-02  -2.621  0.00913 **
-#   log_dogecoin.dl1 -7.213e-04  7.874e-02  -0.009  0.99270 
+# log_dogecoin.dl1 -7.213e-04  7.874e-02  -0.009  0.99270 
 
 # estimates of the VECM model
 crypto_pair.vecm.1$beta
-#                         ect1
+#                     ect1
 # log_bitcoin.l2    1.00000
 # log_dogecoin.l2  -1.06445
 # constant        -15.47143
+# in a long run log_bitcoin 106 percentage of log dogecoin
 
+#-------------------------------------- model ------------------------------------------------------------------------------
 # we can reparametrize the VEC model into VAR
 crypto_pair.vecm.1.asVAR <- vec2var(johan.test.eigen, r = 1)
 # lets see the result
 crypto_pair.vecm.1.asVAR
 
-#-------------------------------------- model ------------------------------------------------------------------------------
-
-# based on the reparametrized model
-# one can calculate and plot Impulse Response Functions
+# Impulse Response Functions
 plot(irf(crypto_pair.vecm.1.asVAR, 
          n.ahead = 28))
 
@@ -593,66 +507,71 @@ serial.test(crypto_pair.vecm.1.asVAR, type = "BG")
 plot(serial.test(crypto_pair.vecm.1.asVAR))
 # squared residuals could be better
 
-# EDF = Empirical Distribution Function
-# lets check normality of residuals
-# this is Jarque-Bera (JB) test
-# Johansen test is sensitive to lack of normality
-
 normality.test(crypto_pair.vecm.1.asVAR)
-# Chi-squared = 20336, df = 4, p-value < 2.2e-16
+# p-value < 2.2e-16
 # H0: data are from a normal distribution
 # data is not from normal distribution
 
 
-c1_vecmVAR_acf <- acf(resid(crypto_pair.vecm.1.asVAR)[,1],
-                  lag.max = 10,
-                  plot = FALSE)   
-c1_vecmVAR_pacf <- pacf(resid(crypto_pair.vecm.1.asVAR)[,1], 
-                    lag.max = 10, 
-                    plot = FALSE) 
-c2_vecmVAR_acf <- acf(resid(crypto_pair.vecm.1.asVAR)[,2],
-                  lag.max = 10, 
-                  na.action = na.pass,
-                  plot = FALSE)   
-c2_vecmVAR_pacf <- pacf(resid(crypto_pair.vecm.1.asVAR)[,2], 
-                    lag.max = 10, 
-                    na.action = na.pass,
-                    plot = FALSE) 
-
-par(mfrow = c(2, 2)) 
-plot(c1_vecmVAR_acf, 
-     main = "VECM bitcoing resid ACF",
-     # lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green"
-     )
-plot(c2_vecmVAR_acf,
-     main = "VECM bitcoing resid PACF",
-     # lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green"
-     )
-plot(c1_vecmVAR_pacf, 
-     main = "VECM dogecoin resid ACF",
-     # lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green"
-     )
-plot(c2_vecmVAR_pacf, 
-     main = "VECM dogecoin resid PACF",
-     # lag.max = 10, 
-     ylim = c(-0.5, 0.5),    
-     lwd = 5,              
-     col = "dark green",
-     )
-par(mfrow = c(1, 1)) 
+# check serial correlation for given model
+vecm.BG_df <- c()
+if(1){
+  BG0 <- round(serial.test(crypto_pair.vecm.1.asVAR, type = "BG", lags.bg = 2)$serial$p.value, 3)
+  BG1 <- round(serial.test(crypto_pair.vecm.1.asVAR, type = "BG", lags.bg = 7)$serial$p.value, 3)
+  BG2 <- round(serial.test(crypto_pair.vecm.1.asVAR, type = "BG", lags.bg = 14)$serial$p.value, 3)
+  BG3 <- round(serial.test(crypto_pair.vecm.1.asVAR, type = "BG", lags.bg = 21)$serial$p.value, 3)
+  BG4 <- round(serial.test(crypto_pair.vecm.1.asVAR, type = "BG", lags.bg = 28)$serial$p.value, 3)
+  
+  vecm.BG_df <- rbind(vecm.BG_df, c(BG0,BG1,BG2,BG3,BG4))
+}
+vecm.BG_df <- as.data.frame(vecm.BG_df)
+colnames(vecm.BG_df) <- c("B-G p-val 2d","B-G p-val 7d", "B-G p-val 14d", "B-G p-val 21d", "B-G p-val 28d")
+rownames(vecm.BG_df) <- "VECM2VAR"
 
 
+if(1){
+  c1_vecmVAR_acf <- acf(resid(crypto_pair.vecm.1.asVAR)[,1],
+                        lag.max = 10,
+                        plot = FALSE)   
+  c1_vecmVAR_pacf <- pacf(resid(crypto_pair.vecm.1.asVAR)[,1], 
+                          lag.max = 10, 
+                          plot = FALSE) 
+  c2_vecmVAR_acf <- acf(resid(crypto_pair.vecm.1.asVAR)[,2],
+                        lag.max = 10, 
+                        na.action = na.pass,
+                        plot = FALSE)   
+  c2_vecmVAR_pacf <- pacf(resid(crypto_pair.vecm.1.asVAR)[,2], 
+                          lag.max = 10, 
+                          na.action = na.pass,
+                          plot = FALSE) 
+  
+  par(mfrow = c(2, 2)) 
+  plot(c1_vecmVAR_acf, 
+       main = paste("crypto_pair.vecm.1.asVAR", names_[1], "ACF"),
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1])
+  plot(c1_vecmVAR_pacf, 
+       main = paste("crypto_pair.vecm.1.asVAR", names_[2], "ACF"),
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1])
+  plot(c2_vecmVAR_acf,
+       main = paste("crypto_pair.vecm.1.asVAR", names_[1], "PACF"),
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[2])
+  plot(c2_vecmVAR_pacf, 
+       main = paste("crypto_pair.vecm.1.asVAR", names_[2], "PACF"),
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[2])
+  par(mfrow = c(1, 1))
+}
 
 
 
+
+# saveRDS(crypto_pair.vecm.1.asVAR, "./data/crypto_pair_vecm1asVAR.rds")
 
 
