@@ -68,7 +68,7 @@ For Bitcoin log-prices lags 1, 4 to show significant correlation with chosen mom
 
 Linear combination of these two series is expressed by following relation:
 
-![l_comb_fomula](img/l_comb_fomula.PNG)
+![l_comb_fomula](img/l_comb_fomula.png)
 
 
 
@@ -76,17 +76,17 @@ Linear combination model summary coefficients are significant (both log_bitcoin 
 
 Cointegrating vector is **[1, - 13.294229, -0.80464]**. It can be interpreted as follows, **if bitcoin log prices of increase by 1 percentage point, log prices increase by  ~0.8 percentage point**.
 
-![l_comb_summary](/img/l_comb_summary.PNG)
+![l_comb_summary](/img/l_comb_summary.png)
 
  
 
 Short run relationship is defined by parameters of ECM equation, which if shaped by following equation, where **lresid** basically corresponds to linear combination residuals:
 
-![ecm1](img/ecm1.PNG)
+![ecm1](img/ecm1.png)
 
 The summary of the ECM model provides parameters that inform about short-run relationship and adjustment coefficient. Intercept is not significant. The diff_log_bitcoin parameter informs that **if bitcoin log price increases by 1 unit, log price of dogecoin increases by ~0.645 units**. The adjustment coefficient (lresid estimated coefficient) is negative which is consistent with expectations. It's value around 5% means that **an unexpected error should be offset within 20 days**, which is relatively long time.
 
-![ecm2](img/ecm2.PNG)
+![ecm2](img/ecm2.png)
 
 
 
@@ -96,7 +96,7 @@ The summary of the ECM model provides parameters that inform about short-run rel
 
 For selected pair of crypto currencies granger casuality analysis was performed to detect if, and which lag changes Bitcoin log-prices may granger cause changes of Degecoin and vice versa. The results are presented below. The null hypothesis stays that there is no Granger casuality.  The underlying Wald test p-values are present in columns 2 and 4. As the grangertest documentation says, they come from comparison of the unrestricted model—in which y is explained by the lags (up to given order order) of y and x — and the restricted model—in which y is only explained by the lags of y. Columns 3, 5 tell if at given lag the granger casuality was observed.   
 
-![granger_casuality](img/granger_casuality.PNG)
+![granger_casuality](img/granger_casuality.png)
 
 The outcome shows that it is log-bitcoin that may have an granger casual effect on Dogecoin log-prices, at lags 1-4. Neither of 1-7 lags of Dogecoin exhibits granger cause effect on Bitcoin, which make sense, as Bitcoin has immensely bigger capitalization and prices; is simply much stronger crypto-currency.
 
@@ -117,21 +117,21 @@ All compuattions may be mimicked running the repository codes of **3_arima.R** s
 
  The same results showed Ljung-Box test. Each model residuals were not autocorrelated up to  4, 7, 14, 21 and 28 days consecutively (in all cases H0 of independence in a given time series was failed to be rejected), however p-values for the last model were the lowest.
 
-![c1_arima_ljung_box](img/c1_arima_ljung_box.PNG)
+![c1_arima_ljung_box](img/c1_arima_ljung_box.png)
 
 
 
 AIC and BIC criterions suggested different models, however in both cases auto ARIMA selected models occurred to be better. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices using ARIMA model.
 
-![c1_arima_AIC](img/c1_arima_AIC.PNG)
+![c1_arima_AIC](img/c1_arima_AIC.png)
 
-![c1_arima_BIC](img/c1_arima_BIC.PNG)
+![c1_arima_BIC](img/c1_arima_BIC.png)
 
 
 
 Both (AR and MA) coefficients were significant.
 
-![c1_arima_coeftest](img/c1_arima_coeftest.PNG)
+![c1_arima_coeftest](img/c1_arima_coeftest.png)
 
 
 
@@ -155,21 +155,21 @@ Similarly to the Bitcoin ARIMA  ACF and PACF plots of model residuals showed tha
 
 
 
-![c2_arima_ljung_box](img/c2_arima_ljung_box.PNG)
+![c2_arima_ljung_box](img/c2_arima_ljung_box.png)
 
 
 
 AIC and BIC criterions suggested different models. AIC as expected suggested less parsimonious model with ARIMA(7,1,7), while BIC suggested ARIMA(1,1,0), which is basically AR model on differenced data, which may seem surprising, as correlogram of first differences  of log prices of Dogecoin did not seem to match pure AR process ACF and PACF patterns.
 
-![c2_arima_AIC](img/c2_arima_AIC.PNG)
+![c2_arima_AIC](img/c2_arima_AIC.png)
 
-![c2_arima_BIC](img/c2_arima_BIC.PNG)
+![c2_arima_BIC](img/c2_arima_BIC.png)
 
 However due to the fact that this model is much simpler and the difference in BIC criterions in higher between models than differences between AIC criterions,  forecast was done using ARIMA(1,1,0).
 
 AR coefficient was significant, however p-value was not equal 0. 
 
-![c2_arima_coeftest](img/c2_arima_coeftest.PNG)
+![c2_arima_coeftest](img/c2_arima_coeftest.png)
 
 ### VAR 
 
@@ -192,15 +192,15 @@ VAR models residual plots for both currencies are presented below. What is visib
 
 Breusch-Godfrey test results however prove no problem of autocorrelation in residuals, except restricted VAR model, with lags up to 14 days, where the null hypothesis of no autocorrelation has been rejected at significance level of 5%.  Other models, values of BG test p-values at this level of lags were slightly above critical value. It needs to be noted however that VARselect function was run with lag.max argument set to 14, which means, that in spite of the fact that the algorithm could have chosen even that far lag, such model did not have the most favorable information criteria value.
 
-![B-G_var](img/B-G_var.PNG)
+![B-G_var](img/B-G_var.png)
 
 
 
 AIC and BIC criterions again suggested different models. AIC suggest however in both cases auto ARIMA selected models occurred to be better. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices using ARIMA model.
 
-![varAIC](img/varAIC.PNG)
+![varAIC](img/varAIC.png)
 
-![varBIC](img/varBIC.PNG)
+![varBIC](img/varBIC.png)
 
 
 
