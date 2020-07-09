@@ -22,7 +22,7 @@ I have written function that compares each pair of currencies available on www.c
 
 The table below shows the results of cointegration analysis made in loop for **log closing prices**  of each pair of currencies available on the website, based on 365 observations (in sample) prior to mid June 2020. 
 
-![tesult_table2](./img/tesult_table2.png)
+![tesult_table2](img/tesult_table2.PNG)
 
 Table above shows example output, where a row contains Engle&Granger and Johansen cointegration procedures results, testing for integration of series that are themselves I(1).
 
