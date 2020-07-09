@@ -82,11 +82,11 @@ Cointegrating vector is **[1, - 13.294229, -0.80464]**. It can be interpreted as
 
 Short run relationship is defined by parameters of ECM equation, which if shaped by following equation, where **lresid** basically corresponds to linear combination residuals:
 
-![ecm1](.\img\ecm1.PNG)
+![ecm1](./img/ecm1.PNG)
 
 The summary of the ECM model provides parameters that inform about short-run relationship and adjustment coefficient. Intercept is not significant. The diff_log_bitcoin parameter informs that **if bitcoin log price increases by 1 unit, log price of dogecoin increases by ~0.645 units**. The adjustment coefficient (lresid estimated coefficient) is negative which is consistent with expectations. It's value around 5% means that **an unexpected error should be offset within 20 days**, which is relatively long time.
 
-![ecm2](.\img\ecm2.PNG)
+![ecm2](./img/ecm2.PNG)
 
 
 
@@ -96,7 +96,7 @@ The summary of the ECM model provides parameters that inform about short-run rel
 
 For selected pair of crypto currencies granger casuality analysis was performed to detect if, and which lag changes Bitcoin log-prices may granger cause changes of Degecoin and vice versa. The results are presented below. The null hypothesis stays that there is no Granger casuality.  The underlying Wald test p-values are present in columns 2 and 4. As the grangertest documentation says, they come from comparison of the unrestricted model—in which y is explained by the lags (up to given order order) of y and x — and the restricted model—in which y is only explained by the lags of y. Columns 3, 5 tell if at given lag the granger casuality was observed.   
 
-![granger_casuality](.\img\granger_casuality.PNG)
+![granger_casuality](./img/granger_casuality.PNG)
 
 The outcome shows that it is log-bitcoin that may have an granger casual effect on Dogecoin log-prices, at lags 1-4. Neither of 1-7 lags of Dogecoin exhibits granger cause effect on Bitcoin, which make sense, as Bitcoin has immensely bigger capitalization and prices; is simply much stronger crypto-currency.
 
@@ -113,25 +113,25 @@ All compuattions may be mimicked running the repository codes of **3_arima.R** s
 
 
 
-![c1_arima_resid_acf_pacf](.\img\c1_arima_resid_acf_pacf.png)
+![c1_arima_resid_acf_pacf](./img/c1_arima_resid_acf_pacf.png)
 
  The same results showed Ljung-Box test. Each model residuals were not autocorrelated up to  4, 7, 14, 21 and 28 days consecutively (in all cases H0 of independence in a given time series was failed to be rejected), however p-values for the last model were the lowest.
 
-![c1_arima_ljung_box](.\img\c1_arima_ljung_box.PNG)
+![c1_arima_ljung_box](./img/c1_arima_ljung_box.PNG)
 
 
 
 AIC and BIC criterions suggested different models, however in both cases auto ARIMA selected models occurred to be better. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices using ARIMA model.
 
-![c1_arima_AIC](.\img\c1_arima_AIC.PNG)
+![c1_arima_AIC](./img/c1_arima_AIC.PNG)
 
-![c1_arima_BIC](.\img\c1_arima_BIC.PNG)
+![c1_arima_BIC](./img/c1_arima_BIC.PNG)
 
 
 
 Both (AR and MA) coefficients were significant.
 
-![c1_arima_coeftest](.\img\c1_arima_coeftest.PNG)
+![c1_arima_coeftest](./img/c1_arima_coeftest.PNG)
 
 
 
@@ -151,25 +151,25 @@ Similarly to the Bitcoin ARIMA  ACF and PACF plots of model residuals showed tha
 
 
 
-![c2_arima_resid_acf_pacf](.\img\c2_arima_resid_acf_pacf.png)
+![c2_arima_resid_acf_pacf](./img/c2_arima_resid_acf_pacf.png)
 
 
 
-![c2_arima_ljung_box](.\img\c2_arima_ljung_box.PNG)
+![c2_arima_ljung_box](./img/c2_arima_ljung_box.PNG)
 
 
 
 AIC and BIC criterions suggested different models. AIC as expected suggested less parsimonious model with ARIMA(7,1,7), while BIC suggested ARIMA(1,1,0), which is basically AR model on differenced data, which may seem surprising, as correlogram of first differences  of log prices of Dogecoin did not seem to match pure AR process ACF and PACF patterns.
 
-![c2_arima_AIC](.\img\c2_arima_AIC.PNG)
+![c2_arima_AIC](./img/c2_arima_AIC.PNG)
 
-![c2_arima_BIC](.\img\c2_arima_BIC.PNG)
+![c2_arima_BIC](./img/c2_arima_BIC.PNG)
 
 However due to the fact that this model is much simpler and the difference in BIC criterions in higher between models than differences between AIC criterions,  forecast was done using ARIMA(1,1,0).
 
 AR coefficient was significant, however p-value was not equal 0. 
 
-![c2_arima_coeftest](.\img\c2_arima_coeftest.PNG)
+![c2_arima_coeftest](./img/c2_arima_coeftest.PNG)
 
 ### VAR 
 
@@ -188,61 +188,61 @@ VAR models residual plots for both currencies are presented below. What is visib
 
 
 
-![var_redis_acf_pacf](.\img\var_redis_acf_pacf.png)
+![var_redis_acf_pacf](./img/var_redis_acf_pacf.png)
 
 Breusch-Godfrey test results however prove no problem of autocorrelation in residuals, except restricted VAR model, with lags up to 14 days, where the null hypothesis of no autocorrelation has been rejected at significance level of 5%.  Other models, values of BG test p-values at this level of lags were slightly above critical value. It needs to be noted however that VARselect function was run with lag.max argument set to 14, which means, that in spite of the fact that the algorithm could have chosen even that far lag, such model did not have the most favorable information criteria value.
 
-![B-G_var](.\img\B-G_var.PNG)
+![B-G_var](./img/B-G_var.PNG)
 
 
 
 AIC and BIC criterions again suggested different models. AIC suggest however in both cases auto ARIMA selected models occurred to be better. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices using ARIMA model.
 
-![varAIC](.\img\varAIC.PNG)
+![varAIC](./img/varAIC.PNG)
 
-![varBIC](.\img\varBIC.PNG)
+![varBIC](./img/varBIC.PNG)
 
 
 
 First component of VAR model, where log_bitcoin is plays a role of dependent variable, have 2 parameters significant at 5% significance level (intercept and first lag of bitcoint) and one at 1% (bitcoin second lag), neither lag of dogecoin seems significant, which complies with Granger casuality test. For second component, equation where an endogenous variable is log_dogecoin intercept is not significant, but first lags of both currencies significantly contribute to log dogecoin as well as second lag of log bitcoin. 
 
-![final_VAR_coeficients](.\img\final_VAR_coeficients.png)
+![final_VAR_coeficients](./img/final_VAR_coeficients.png)
 
 Above coefficients are not to be interpreted as such but below are presented input response function and variance decomposition are presented.
 
 Input response for shock from bitcoin seems to stabilize and decrease for both currencies, while at initial stage for both remains significant and positive. In case of impulse from dogecoin initially it is positive and only noticeable for  itself and as the time passes it starts having some effect on bitcoin. Dogecoin is much weaker currency, and it is understandable that shocks in such minor currency will not affect immediately one of the primary market players. It's significance increases to some level as the time passes.
 
-![final_VAR_coeficients](.\img\irf_VAR.png)
+![final_VAR_coeficients](./img/irf_VAR.png)
 
-![final_VAR_coeficients](.\img\irf_var_2.png)
+![final_VAR_coeficients](./img/irf_var_2.png)
 
 
 
 The variance decomposition indicates the amount of information that each system element contributes to the other one, in term of autoregression. The results are compatible IRF, first few periods (days) ahead bitcoin log price forecast error variance is only influenced by itself, in long run there seems to be some mild influence of dogecoin shocks. The influence of bitcoin shocks on dogecoin seems to be much stronger, as dogecoin in first few days forecast error variance is even more related to bitcoin that itself, while from 3rd day on, it is primarily related to dogecoin.
 
-![vd_VAR](.\img\vd_VAR.png)
+![vd_VAR](./img/vd_VAR.png)
 
 ### VECM 
 
 VECM model starts from checking cointegration with Johansen test. Johansen trace and Johansen eigenvalues test results give the same results, indicating that the rank of the system is equal 1, ie. there is one cointegrating vector, at 5% significance level. r=0 values are higher that c.v. thus we reject these null hypothesis, and look at r<=1, where we are not able to reject. 
 
-![johansen_trance_strip](.\img\johansen_trance_strip.png)
+![johansen_trance_strip](./img/johansen_trance_strip.png)
 
-![johasen_eigen_snip](.\img\johasen_eigen_snip.png)
+![johasen_eigen_snip](./img/johasen_eigen_snip.png)
 
 The VECM  model  with one cointegration rank summary shows that error correction term which shapes the long run relationship, the convergence to long-run equilibrium in dynamic system. The terms are expected to be of opposite signs, which would, which is not a case in this example. At least only one term (in formula with log_bitcoin as dependent variable) is significant. It could fit previous findings, that these was bitcoin that influence dogecoin and not the other way around, as the difference between capitalizations and prices of these currencies is enormous. Puzzling is that the ECT element is significant in equation where log_bitcoin is dependent variable, not the other way around, but again it may be due to the difference in values, which is also noticeable in log prices.
 
-![vecm_sumamry_full](.\img\vecm_sumamry_full.png)
+![vecm_sumamry_full](./img/vecm_sumamry_full.png)
 
 In long run log bitcoin seems to be higher than log dogecoin, which is given by cointegrating vector of betas.
 
-![johansen_eigen_cointegration](.\img\johansen_eigen_cointegration.png)
+![johansen_eigen_cointegration](./img/johansen_eigen_cointegration.png)
 
 The VECM model represented as VAR residuals seem to exhibit stronger autocorrelation in case of bitcoin as well as dogecoin, comparing to various previous models, except VAR(2), which is in fact VECM(1) model, thus correlograms also are alike.
 
-![vecm_acf_pacf](.\img\vecm_acf_pacf.png)
+![vecm_acf_pacf](./img/vecm_acf_pacf.png)
 
-![B-G_vecm2VAR](.\img\B-G_vecm2VAR.png)
+![B-G_vecm2VAR](./img/B-G_vecm2VAR.png)
 
 
 
