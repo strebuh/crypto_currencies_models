@@ -52,7 +52,7 @@ For each pair cointegration tests were performed for 365 observations (in sample
 
 Their first differences seem indeed stationary, the variance apart from few moments seem relatively constant, however there are some shocks, when the volatility of log prices rise significantly, these for both currencies those moments are mostly the same, apart from late October 2019 when Bitcoin experienced positive shock, or first part of February of 2020 when Dogecoin experienced positive shock, higher than Bitcoin. It needs to be noted however that there is visible some volatility clustering. Which may be a good reason to apply also VAR/VECM models.
 
-![pair_and_diff](./img/pair_and_diff.png)
+![pair_and_diff](img/pair_and_diff.png)
 
 
 
