@@ -110,7 +110,7 @@ Four different ARIMA models were evaluated for Bitcoin.
 3. ARIMA(1,1,1) - chosen by auto.arima function with max p and q = 7 and seasonality also being in scope; choice based on AIC criterion.
 4. ARIMA(0,1,1)  - chosen by auto.arima function with max p and q = 7 and seasonality also being in scope; choice based on BIC criterion.
 
-All compuattions may be mimicked running the repository codes of **3_arima.R** script. ACF and PACF plots of residuals was not a major problem for any of the models except the BIC criterion based auto-arima.
+All computations may be mimicked running the repository codes of **3_arima.R** script. ACF and PACF plots of residuals was not a major problem for any of the models except the BIC criterion based auto-arima.
 
 
 
@@ -191,13 +191,13 @@ VAR models residual plots for both currencies are presented below. What is visib
 
 ![var_redis_acf_pacf](img/var_redis_acf_pacf.png)
 
-Breusch-Godfrey test results however prove no problem of autocorrelation in residuals, except restricted VAR model, with lags up to 14 days, where the null hypothesis of no autocorrelation has been rejected at significance level of 5%.  Other models, values of BG test p-values at this level of lags were slightly above critical value. It needs to be noted however that VARselect function was run with lag.max argument set to 14, which means, that in spite of the fact that the algorithm could have chosen even that far lag, such model did not have the most favorable information criteria value.
+Breusch-Godfrey test results however prove no problem of autocorrelation in residuals, except restricted VAR model, with lags up to 14 days, where the null hypothesis of no autocorrelation has been rejected at significance level of 5%.  Other models' values of BG test p-values at this level of lags were slightly above critical value. It needs to be noted however that VARselect function was excecuted with lag.max argument set to 14, which means, that in spite of the fact that the algorithm could have chosen even that number far lags, such a models  did not have the most favorable information criteria value.
 
 ![B-G_var](img/B-G_var.png)
 
 
 
-AIC and BIC criterions again suggested different models. AIC suggest however in both cases auto ARIMA selected models occurred to be better. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices using ARIMA model.
+AIC and BIC criterions again suggested different models. Due to potential autocorrelation issues model indicated by AIC criterion was selected for forecasting of log Bitcoin prices.
 
 ![varAIC](img/varAIC.png)
 
@@ -205,7 +205,7 @@ AIC and BIC criterions again suggested different models. AIC suggest however in 
 
 
 
-First component of VAR model, where log_bitcoin is plays a role of dependent variable, have 2 parameters significant at 5% significance level (intercept and first lag of bitcoint) and one at 1% (bitcoin second lag), neither lag of dogecoin seems significant, which complies with Granger casuality test. For second component, equation where an endogenous variable is log_dogecoin intercept is not significant, but first lags of both currencies significantly contribute to log dogecoin as well as second lag of log bitcoin. 
+First component of VAR model, where a log_bitcoin plays a role of dependent variable, have 2 parameters significant at 5% significance level (intercept and first lag of bitcoint) and one at 1% (bitcoin second lag). Neither lag of dogecoin seems significant, which complies with Granger casuality test. For second component, equation where an endogenous variable is log_dogecoin, intercept is not significant, but first lags of both currencies significantly contribute to log dogecoin, as well as, second lag of log bitcoin. 
 
 ![final_VAR_coeficients](img/final_VAR_coeficients.png)
 
@@ -219,7 +219,7 @@ Input response for shock from bitcoin seems to stabilize and decrease for both c
 
 
 
-The variance decomposition indicates the amount of information that each system element contributes to the other one, in term of autoregression. The results are compatible IRF, first few periods (days) ahead bitcoin log price forecast error variance is only influenced by itself, in long run there seems to be some mild influence of dogecoin shocks. The influence of bitcoin shocks on dogecoin seems to be much stronger, as dogecoin in first few days forecast error variance is even more related to bitcoin that itself, while from 3rd day on, it is primarily related to dogecoin.
+The variance decomposition indicates the amount of information that each system element contributes to the other one, in term of autoregression. The results are compatible with IRF, first few periods (days) ahead bitcoin log price forecast error variance is only influenced by itself, in long run there seems to be some mild influence of dogecoin shocks. The influence of bitcoin shocks on dogecoin seems to be much stronger, as dogecoin in first few days, forecast error variance is even more related to bitcoin that itself, while from 3rd day on, it is primarily related to dogecoin.
 
 ![vd_VAR](img/vd_VAR.png)
 
@@ -231,7 +231,7 @@ VECM model starts from checking cointegration with Johansen test. Johansen trace
 
 ![johasen_eigen_snip](img/johasen_eigen_snip.png)
 
-The VECM  model  with one cointegration rank summary shows that error correction term which shapes the long run relationship, the convergence to long-run equilibrium in dynamic system. The terms are expected to be of opposite signs, which would, which is not a case in this example. At least only one term (in formula with log_bitcoin as dependent variable) is significant. It could fit previous findings, that these was bitcoin that influence dogecoin and not the other way around, as the difference between capitalizations and prices of these currencies is enormous. Puzzling is that the ECT element is significant in equation where log_bitcoin is dependent variable, not the other way around, but again it may be due to the difference in values, which is also noticeable in log prices.
+The VECM  model  with one cointegration rank summary shows error correction term which shapes the long run relationship. The terms are expected to be of opposite signs, which is not a case in this example. At least only one term (in formula with log_bitcoin as dependent variable) is significant. It could fit previous findings, that these was bitcoin that influence dogecoin and not the other way around, as the difference between capitalizations and prices of these currencies is enormous. Puzzling is that the ECT element is significant in equation where log_bitcoin is dependent variable, not the other way around, but again it may be due to the difference in values, which is also noticeable in log prices.
 
 ![vecm_sumamry_full](img/vecm_sumamry_full.png)
 
@@ -267,9 +267,10 @@ Finally let's compare 7 days forecast out of sample period, which ranged from  J
 
 
 
-Comparing mean errors for bitcoin, it is visible that the lowest MAE, MSE, MAPE and AMAPE belongs to VAR model. It is not surprising that Arima model had much worst results, VECM model has also higher errors, which may be caused be the fact that in spite of the fact that VECM(1) model corresponds to VAR(2) model, forecast was done based on VECM model transformed to VAR, which resulted in slight difference of coefficients, coefficients which is visible below.
+Comparing mean errors for bitcoin, it is visible that the lowest MAE, MSE, MAPE and AMAPE belongs to VAR model. It is not surprising that Arima model had much worst results, VECM model has also higher errors, which may be caused by the fact that in despite VECM(1) model corresponds to VAR(2) model, forecast was done based on VECM model transformed to VAR, which resulted in slight difference of coefficients, coefficients which is visible below.
 
 In case of second currency, Dogecoin, due to the fact that it's unit prices are much lower, the errors are such low, that MSE for all models after rounding up to 6 digits was still 0, thus **MSE values, if lower than 0.000001 were multiplied by 1,000,000** for visual inspection convenience.
+In both cases VAR models seems to give the lowerst mean errors.
 
 #### Bitcoin
 
