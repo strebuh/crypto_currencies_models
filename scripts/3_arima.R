@@ -2,8 +2,15 @@ library(xts)
 library(forecast)
 library(lmtest)
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+
+# laod function for data processing
 source("functions/finding_stationary_pair.R")
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# PREPARE DATA
 
 # load results of contegration checks
 all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
@@ -15,24 +22,22 @@ crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,           
                                      n_obs_is = 365,                                 # how many observations in scope
                                      n_obs_ooc = 15,                                 # number of observations out of scope
                                      clipped = all_combinations_cointegr$pairs_data, # list with data after 
-                                     # crypto_list = crypto_list,
                                      log_prices = TRUE)
 
+# in sample data and out of sample data
 crypto_pair <- crypto_pair_all$in_smpl
 crypto_pair_oos <- crypto_pair_all$oo_smpl
 
-dim(crypto_pair) # [1] 365   5
-names(crypto_pair)
-# [1] "log_bitcoin"       "log_dogecoin"      "diff_log_bitcoin"  "diff_log_dogecoin" "lresid" 
+# set samef used further
+names_ <- c("Bitcoin", "Dogecoin")
 
 # ---------------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------- ARIMA -----------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------------------------
+# BITCOIN
 
+# ---------------------------------------------------------------------------------------------------------------------------
+#  C1 ARIMA 1
 
-# -------------------------------------------------- BITCOIN ----------------------------------------------------------------
-
-# ------------------------------------------------------------------------- C1 - ARIMA 1
 c1.arima.4.1.4 <- Arima(crypto_pair[,1],
                      order = c(4, 1, 4),
                      method = "CSS-ML",
@@ -75,7 +80,9 @@ Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
-# ------------------------------------------------------------------------- C1 - ARIMA 2
+# ---------------------------------------------------------------------------------------------------------------------------
+#  C1 - ARIMA 2
+
 c1.arima.7.1.7 <- Arima(crypto_pair[,1],
                         order = c(7, 1, 7),
                         method = "CSS-ML",
@@ -106,7 +113,10 @@ Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
-# ------------------------------------------------------------------------- C1 - ARIMA 3
+
+# ---------------------------------------------------------------------------------------------------------------------------
+#   C1 - ARIMA 3
+
 c1.auto.AIC <- auto.arima(crypto_pair[,1],
                           d = 1,             # parameter d of ARIMA model
                           D = 1,
@@ -147,7 +157,9 @@ Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.auto.AIC), type = "Ljung-Box", lag = 28)
 
-# ------------------------------------------------------------------------- C1 - ARIMA 4
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# C1 - ARIMA 4
 
 c1.auto.BIC <- auto.arima(crypto_pair[,1],
                           d = 1,             # parameter d of ARIMA model
@@ -191,8 +203,8 @@ Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.auto.BIC), type = "Ljung-Box", lag = 28)
 # there is autocorrelation up to 7 days, almost up to 14 days
 
-
-# ------------------------------------------------------------------------------------ models overview
+# ---------------------------------------------------------------------------------------------------------------------------
+# models overview
 
 c1.arima.models <- list(c1.arima.4.1.4=c1.arima.4.1.4, 
                         c1.arima.7.1.7=c1.arima.7.1.7, 
@@ -249,7 +261,6 @@ if(1){
                     lag.max = plot_lags, 
                     plot = FALSE,
                     na.action = na.pass)
-  
   
   par(mfrow = c(4, 2)) 
   plot(c1m1_acf, 
@@ -319,10 +330,12 @@ coeftest(c1.auto.AIC)
 saveRDS(c1.auto.AIC, "./data/c1.arima111.rds")
 
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# DOGECOIN
 
-# -------------------------------------------------- DOGECOIN ---------------------------------------------------------------
-
-# ------------------------------------------------------------------------- C2 - ARIMA 1
+# ---------------------------------------------------------------------------------------------------------------------------
+#  C2 - ARIMA 1
 
 c2.arima.4.1.4 <- Arima(crypto_pair[,2],
                         order = c(4, 1, 4),
@@ -365,7 +378,8 @@ Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 14)
 Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 21)
 Box.test(resid(c2.arima.4.1.4), type = "Ljung-Box", lag = 28)
 
-# ------------------------------------------------------------------------ C2 - ARIMA 2 
+# ---------------------------------------------------------------------------------------------------------------------------
+#  C2 - ARIMA 2 
 
 c2.arima.7.1.7 <- Arima(crypto_pair[,2],
                         order = c(7, 1, 7),
@@ -399,7 +413,8 @@ Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 14)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 21)
 Box.test(resid(c1.arima.7.1.7), type = "Ljung-Box", lag = 28)
 
-# ------------------------------------------------------------------------ C2 - ARIMA 3 
+# ---------------------------------------------------------------------------------------------------------------------------
+# C2 - ARIMA 3 
 
 c2.auto.AIC <- auto.arima(crypto_pair[,2],
                           d = 1,             # parameter d of ARIMA model
@@ -443,7 +458,8 @@ Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 21)
 Box.test(resid(c2.auto.AIC), type = "Ljung-Box", lag = 28)
 
 
-# ------------------------------------------------------------------------ C2 - ARIMA 4 
+# ---------------------------------------------------------------------------------------------------------------------------
+# C2 - ARIMA 4 
 
 c2.auto.BIC <- auto.arima(crypto_pair[,2],
                           d = 1,             # parameter d of ARIMA model
@@ -487,7 +503,8 @@ Box.test(resid(c2.auto.BIC), type = "Ljung-Box", lag = 28)
 # THERE IS AN AUTOCORRELATION
 
 
-# -------------------------------------------------------------------------- models overview
+# ---------------------------------------------------------------------------------------------------------------------------
+#  models overview
 
 c2.arima.models <- list(c2.arima.4.1.4=c2.arima.4.1.4,
                         c2.arima.7.1.7=c2.arima.7.1.7, 

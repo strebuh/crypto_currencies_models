@@ -3,24 +3,36 @@ library(tidyverse)
 library(data.table)
 # library(devtools)
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+
 # # import custom functions
 source("functions/getCryptoHistoricalPrice.R")
 source("functions/finding_stationary_pair.R")
 
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
 # ADF, H0: alfa=1, there is unit root, series is non-stationary, small p-val reject H0 so stationary yt, hight p-val > fail to reject H0, yt non-stat 
 # desired p-val < 0.05 
 # Breusch–Godfrey test: The H0: no serial correlation of any order up to p.
 # desired BG p-val > 0.05, fail to rejecto H0
 # testing integration order
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# load data to run analysis
+
 # dataframe with combinations of crypto currencies
 all_combinations <- readRDS("./data/all_combinations.RDS")
 dim(all_combinations) # [1] 4950    2
 
-# --------------------------------------- LOG PRICES  ------------------------------------------------------------------------------
-# perform cointegration test for loaded combiantions of crypto currencies
-source("functions/finding_stationary_pair.R")
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# LOG PRICES
 
+
+# perform cointegration test for loaded combiantions of crypto currencies
 if(0){
   all_combinations_cointegr <- get_cointegration_table(all_combinations,         # table with combinations of cryptocurrencies
                                                        standardize = FALSE,            # if prices should be standardized
@@ -32,15 +44,17 @@ if(0){
                                                        johansen = TRUE
                                                        ) 
   
-  saveRDS(all_combinations_cointegr, "./data/all_combinations_coint_2.RDS")
+  # saveRDS(all_combinations_cointegr, "./data/all_combinations_coint_2.RDS")
 }
 all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
+
 
 # look in structure of resluts
 table(all_combinations_cointegr$results$conint_info)
 # compare combin_adf data not available     not integrated 
 #         119                764               4067 
 
+# get result table 
 cointegr_tb <- all_combinations_cointegr$results
 
 # transform to numeric variable
@@ -107,32 +121,18 @@ cointegr_tb_signf
 # extract data from contegration test (data clipped to shape in scope was saved there)
 crypto_list <- all_combinations_cointegr$pairs_data
 
-source("functions/finding_stationary_pair.R")
 
-# create plots of given pair, choosing by number of row from result table
-cryptoPairPlots(crypto_list,         # list with data
-                cointegr_tb_signf,  # table of cointefration results
-                n_table = 6,        # which pair to prepare plots for
-                log_prices = TRUE,   # should first plot show log prices?
-                plot_lags = 15,      # how many lags in ACF/PACF 
-                # colerograms = F,  # should ACF/PACF be showed
-                diffPlots = TRUE,    # should plots of differenced prices/logprices be showed
-                in_sample = 365,     # how many observations in scope
-                oo_sample = 15,      # number of observations out of scope
-                ggplot = FALSE,       # should first plot be a ggplot based
-                return_data = FALSE,  # if laso to return in sample data
-                alpha = 0.4,
-                colors = c("red", "black")
-                )         
+cryptoPairPlots(crypto_list,            # list with data
+                cointegr_tb_signf,      # table of cointefration results
+                n_table = 6,            # which pair to prepare plots for
+                log_prices = TRUE,      # should first plot show log prices?
+                plot_lags = 15,         # how many lags in ACF/PACF 
+                # colerograms = TRUE,   # should ACF/PACF be showed
+                diffPlots = TRUE,       # should plots of differenced prices/logprices be showed
+                in_sample = 365,        # how many observations in scope
+                oo_sample = 15,         # number of observations out of scope
+                alpha = c(1, 0.5),
+                ggplot = FALSE,         # should first plot be a ggplot based
+                return_data = FALSE)    # if laso to return in sample data        
 
-
-# get data with differences and log prices
-crypto_pair <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
-                                 n_table = 6,                                    # which pair to prepare plots for
-                                 n_obs_is = 365,                                  # how many observations in scope
-                                 n_obs_ooc = 15,                                  # number of observations out of scope
-                                 clipped = crypto_list, # list with data after 
-                                 # crypto_list = crypto_list,
-                                 log_prices = TRUE
-                                 )$in_smpl
 

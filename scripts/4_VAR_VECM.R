@@ -3,22 +3,26 @@ library(forecast)
 library(lmtest)
 library(vars)
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+
 # laod function for data processing
 source("functions/finding_stationary_pair.R")
 
-# ---------------------------------------------------- PREPARE DATA ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# PREPARE DATA
 
 # load results of contegration checks
 all_combinations_cointegr <- readRDS("./data/all_combinations_coint_2.RDS")
 cointegr_tb_signf <- readRDS("./data/cointegr_tb_signf_5_7.RDS")
 
 # get data with differences and log prices
-crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,                # table of cointefration results
-                                 n_table = 6,                                    # which pair to prepare plots for
-                                 n_obs_is = 365,                                 # how many observations in scope
-                                 n_obs_ooc = 15,                                 # number of observations out of scope
-                                 clipped = all_combinations_cointegr$pairs_data, # list with data after 
-                                 # crypto_list = crypto_list,
+crypto_pair_all <- getDifferencesXTS(coint_table = cointegr_tb_signf,            
+                                 n_table = 6,                                    
+                                 n_obs_is = 365,                                 
+                                 n_obs_ooc = 15,                                 
+                                 clipped = all_combinations_cointegr$pairs_data, 
                                  log_prices = TRUE)
 
 # in sample data and out of sample data
@@ -28,7 +32,10 @@ crypto_pair_oos <- crypto_pair_all$oo_smpl
 # set samef used further
 names_ <- c("Bitcoin", "Dogecoin")
 
-# ------------------------------------------------- VAR MODEL ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# VAR MODEL
+
 # selection without seasons
 VARselect(crypto_pair[,1:2], 
           lag.max = 14
@@ -45,7 +52,9 @@ VARselect(crypto_pair[,1:2],
 # 2      2      1      2 
 
 
-# ------------------------------------------------------------------------------------------------- VAR(2) seasons
+# ---------------------------------------------------------------------------------------------------------------------------
+# VAR(2) seasons
+
 # VAR model with 7 lags and seasons
 crypto_pair.VAR.2.s <- VAR(crypto_pair[,1:2],
                          p = 2,
@@ -84,7 +93,11 @@ serial.test(crypto_pair.VAR.2.s)
 
 plot(crypto_pair.VAR.2.s)
 
-# ------------------------------------------------------------------------------------------------- VAR(2)
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# VAR(2)
+
+
 # model without seasonality component
 crypto_pair.VAR.2 <- VAR(crypto_pair[,1:2], 
                         p = 2)
@@ -114,7 +127,9 @@ serial.test(crypto_pair.VAR.2)
 plot(crypto_pair.VAR.2)
 # no autocorrelation
 
-# ------------------------------------------------------------------------------------------------- restricted VAR 1 
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# restricted VAR 1 
 
 # The Granger causality results showed the bi-directional feedback on 5% level.
 casuality <- readRDS("./data/gr_casual_dl_bitcoin_dl_dogecoin.RDS")
@@ -171,7 +186,11 @@ serial.test(crypto_pair.VAR.restr1)
 plot(crypto_pair.VAR.restr1)
 # although the plot looks allright, the Portmanteau test for autocorrelation revealsproblem of autocorrelation of residuals. 
 
-# ------------------------------------------------------------------------------------------------- VAR(4)
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# VAR(4)
+
 crypto_pair.VAR.4 <- VAR(crypto_pair[,1:2],
                          p = 4) 
 coeftest(crypto_pair.VAR.4)
@@ -200,7 +219,9 @@ serial.test(crypto_pair.VAR.4, type = "BG")
 # p-value = 0.4784 <- no autocorrelation
 
 
-# ---------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# VAR models comparison
 
 # list of VAR model
 var.models <- list(var.2.s=crypto_pair.VAR.2.s, var.2=crypto_pair.VAR.2, var.restricted=crypto_pair.VAR.restr1, var.4=crypto_pair.VAR.4)
@@ -429,7 +450,11 @@ plot(fevd_var)
 # ---------------------------------------------------------------- VECM ----------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# johansen test
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# johansen tests / cointegration
+
+# trace
 johan.test.trace <- ca.jo(crypto_pair[,1:2],         
                           ecdet = "const",
                           type = "trace",  
@@ -442,7 +467,7 @@ summary(johan.test.trace)
 # r = 0  | 20.80 17.85 19.96 24.60
 # rank 0 rejected, rank <=1 not rejected, so one cointegrationg vector
 
-# https://www.researchgate.net/post/2_variables_and_2_cointegrating_equations_can_anyone_help_me2
+# eigenvalue
 johan.test.eigen <- ca.jo(crypto_pair[,1:2],        
                           ecdet = "const", 
                           type = "eigen",  
@@ -459,7 +484,10 @@ get_pair_plot2(crypto_pair[,1:2], # dataframe or xts
                            ggplot = T
 )
  
-#-------------------------------------- model ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# VECM model
+
 crypto_pair.vecm.1 <- cajorls(johan.test.eigen, r = 1) 
 
 summary(crypto_pair.vecm.1$rlm)
@@ -483,7 +511,10 @@ crypto_pair.vecm.1$beta
 # constant        -15.47143
 # in a long run log_bitcoin 106 percentage of log dogecoin
 
-#-------------------------------------- model ------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# VECM to VAR 
+
 # we can reparametrize the VEC model into VAR
 crypto_pair.vecm.1.asVAR <- vec2var(johan.test.eigen, r = 1)
 # lets see the result
@@ -512,6 +543,10 @@ normality.test(crypto_pair.vecm.1.asVAR)
 # H0: data are from a normal distribution
 # data is not from normal distribution
 
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# VECM to VAR visualization
 
 # check serial correlation for given model
 vecm.BG_df <- c()
@@ -570,8 +605,5 @@ if(1){
 }
 
 
-
-
 # saveRDS(crypto_pair.vecm.1.asVAR, "./data/crypto_pair_vecm1asVAR.rds")
-
-
+summary(crypto_pair.VAR.2)

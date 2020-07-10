@@ -1,7 +1,11 @@
 library(rvest)
 library(data.table)
 
-#  ------------------   get list of all top 100 crypto -----------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+#  get list of all top 100 crypto
+
+
 # scrape names of cryptocurrencies
 coinmarketcap <- xml2::read_html("https://coinmarketcap.com/")
 crypto_names <- coinmarketcap %>%

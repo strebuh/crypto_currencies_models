@@ -4,13 +4,24 @@ library(fUnitRoots)
 library(lmtest)
 library(vars)
 library(tsDyn)
+library(scales)
+
+#----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
 
 source("functions/getCryptoHistoricalPrice.R")
 source("functions/function_testdf2.R")
 
 #----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
+
 #merge to xts into one df
-merge_crypto_pair <- function(x, y, x_, y_, xts = T){
+merge_crypto_pair <- function(x,       # 1st df from getCryptoHistoricalPrice
+                              y,       # 2nd df from getCryptoHistoricalPrice
+                              x_,      # name of 1st item
+                              y_,      # name of 1st item 
+                              xts = T  # should be transformed to XTS?
+                              ){
   
   # x[,"Date"] <- as.Date(x[,"Date"], format="%Y-%m-%d")
   # y[,"Date"] <- as.Date(y[,"Date"], format="%Y-%m-%d")
@@ -19,7 +30,6 @@ merge_crypto_pair <- function(x, y, x_, y_, xts = T){
   # 
   # y_ <- getCryptoHistoricalPrice(y)
   # message(paste(y," has been downloaded."))
-  
   
   xy <- merge(x[,c("Date", "Close")], y[,c("Date", "Close")], by="Date")
   
@@ -31,8 +41,14 @@ merge_crypto_pair <- function(x, y, x_, y_, xts = T){
 }
 
 #----------------------------------------------------------------------------------------------------------------------------
-# do cointegration checks for given pair of currencies
-find_cointegration <- function(xy, aug = 10, include_dates = T, log_prices = T){
+#----------------------------------------------------------------------------------------------------------------------------
+# do cointegration checks for given pair of currencies wihtoug Johansen
+
+find_cointegration <- function(xy,                  # df merged xts with prices
+                               aug = 10,            # numer of lags to use
+                               include_dates = T,   # range of dates be incorporated in result
+                               log_prices = T       # if to transform to log prices
+                               ){
 
   if(log_prices){
     xy[,1] <- log(xy[,1])
@@ -112,7 +128,16 @@ find_cointegration <- function(xy, aug = 10, include_dates = T, log_prices = T){
   return(results)
 }
 
-find_cointegration2 <- function(xy, aug = 10, include_dates = T, log_prices = T){
+#----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
+# do cointegration checks for given pair of currencies WITH Johansen
+
+
+find_cointegration2 <- function(xy, 
+                                aug = 10, 
+                                include_dates = T, 
+                                log_prices = T
+                                ){
   
   if(log_prices){
     xy[,1] <- log(xy[,1])
@@ -251,20 +276,22 @@ find_cointegration2 <- function(xy, aug = 10, include_dates = T, log_prices = T)
 }
 
 #----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
 # get table of cointegration based on provided table of pair of names
-get_cointegration_table <- function(pairs_dt,
-                                    standardize = FALSE, 
-                                    in_sample = NULL, 
-                                    oo_sample = NULL, 
-                                    data_list = NULL, 
-                                    include_dates = TRUE, 
-                                    save_as = NULL, 
-                                    log_prices = TRUE,
-                                    johansen = FALSE
+
+
+get_cointegration_table <- function(pairs_dt,               # 2 column df with names of currencies like: Bitcoin, XRP
+                                    standardize = FALSE,    # should data be standardized before analysis
+                                    in_sample = NULL,       # number of items in sample
+                                    oo_sample = NULL,       # number of items out of sample
+                                    data_list = NULL,       # list of dataframes with prices, if null getCryptoHistoricalPrice will try to download
+                                    include_dates = TRUE,   # range of dates be incorporated in result
+                                    save_as = NULL,         # full path where to save RDS
+                                    log_prices = TRUE,      # if to transform to log prices
+                                    johansen = FALSE        # Engle-Grangerif AND JOHANSEN, false will do only E.G.   
                                     ){
   
   pairs_list <- list()
-  # failed_pairs <- c()
   results <- c()
   
   if(is.null(data_list)){
@@ -389,14 +416,17 @@ get_cointegration_table <- function(pairs_dt,
 }
 
 #----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
 # prepare data from scraped data in list, by providing table of cointegration and number of row of the pair of currencies
-getDifferencesXTS <- function(coint_table, # table with results of cointegration
-                              n_table, 
-                              n_obs_is, 
-                              n_obs_ooc, 
-                              clipped = NULL,
-                              crypto_list = NULL,
-                              log_prices = FALSE){
+
+getDifferencesXTS <- function(coint_table,          # table with results of cointegration from get_cointegration_table
+                              n_table,              # which pair from table to take
+                              n_obs_is,             # number of in sample observations
+                              n_obs_ooc,            # number of out of sample observations
+                              clipped = NULL,       # use data from 3rd element of get_cointegration_table output (merged pairs in one df)
+                              crypto_list = NULL,   # use data from 1st element of get_cointegration_table output (list of df, each surr separately)
+                              log_prices = FALSE    # if log prices to be outputed
+                            ){
   
   c1 <- as.character(coint_table$cc1[n_table])
   c2 <- as.character(coint_table$cc2[n_table])
@@ -441,10 +471,19 @@ getDifferencesXTS <- function(coint_table, # table with results of cointegration
   return(data)
 }
 
-
+#----------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------
 # get plot of a pair of currencies
-get_pair_plot <- function(x, y, data_list = NULL,  n_last = NULL, log_price = F, standardize = T, ggplot = F){
+
+
+get_pair_plot <- function(x,                    # name of 1st item
+                          y,                    # name of 2nd item
+                          data_list = NULL,     # list of data frames with data
+                          n_last = NULL,        # how many last items to plot
+                          log_price = FALSE,    # should log prices be used
+                          standardize = TRUE,   # if data on plot to be standardized
+                          ggplot = FALSE        # if false, base plot will generate plots
+                          ){
   
   if(is.character(x) & is.character(y) & !is.null(data_list)){
     x_df <- data_list[[x]]
@@ -504,12 +543,16 @@ get_pair_plot <- function(x, y, data_list = NULL,  n_last = NULL, log_price = F,
   }
 }
 
-# plot based on data
-get_pair_plot2 <- function(data, # dataframe or xts
+
+#----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
+
+# plot based on dataframe, not names and list of dataframes
+get_pair_plot2 <- function(data,                        # dataframe or xts, 2 first columsn will be ploted
                           # log_price = F, 
-                          standardize = F,
-                          ggplot = F,
-                          colors = c("black", "blue")
+                          standardize = FALSE,          # if data on plot to be standardized
+                          ggplot = FALSE,               # if false, base plot will generate plots, else ggplot
+                          colors = c("black", "blue")   # vector colors of itmes on the plot
                           ){
   
 
@@ -569,22 +612,23 @@ get_pair_plot2 <- function(data, # dataframe or xts
 }
 
 #----------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------
 
 # prepare plots: cryptocurrencies, their differences, acf, pacf
-cryptoPairPlots <- function(crypto_list,             # list with data, but from list with names c1_c2
-                            coint_table,             # table of cointefration results
-                            n_table,                 # which pair to prepare plots for
-                            log_prices = TRUE,       # should first plot show log prices?
-                            scale_plot = TRUE,       # if data on a plot sould be also scaled
-                            plot_lags = 15,          # how many lags in ACF/PACF 
-                            # colerograms = TRUE,      # should ACF/PACF be showed
-                            diffPlots=TRUE,          # should plots of differenced prices/logprices be showed
-                            in_sample = 365,         # how many observations in scope
-                            oo_sample = 15,          # number of observations out of scope
-                            ggplot = FALSE,          # should first plot be a ggplot based
-                            return_data = FALSE,      # if laso to return in sample data
-                            alpha = c(1, 0.5),
-                            colors = c("black", "blue")
+cryptoPairPlots <- function(crypto_list,                 # list with data, but from list with names c1_c2
+                            coint_table,                 # table of cointefration results
+                            n_table,                     # which pair to prepare plots for
+                            log_prices = TRUE,           # should first plot show log prices?
+                            scale_plot = TRUE,           # if data on a plot sould be also scaled
+                            plot_lags = 15,              # how many lags in ACF/PACF 
+                            # colerograms = TRUE,        # should ACF/PACF be showed
+                            diffPlots=TRUE,              # should plots of differenced prices/logprices be showed
+                            in_sample = 365,             # how many observations in scope
+                            oo_sample = 15,              # number of observations out of scope
+                            ggplot = FALSE,              # should first plot be a ggplot based
+                            return_data = FALSE,         # if laso to return in sample data
+                            alpha = c(1, 0.5),           # transparency of first differences (they tend to be not readable)
+                            colors = c("black", "blue")  # colors of items to the plot
                             ){
   
   # prapeare data with based on table and list of data
@@ -724,11 +768,10 @@ cryptoPairPlots <- function(crypto_list,             # list with data, but from 
   }
 }
 
-
+#----------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------
 # functions to compute AIC and BIC for VAR model outside VARselect function for single model 
-# https://stackoverflow.com/questions/46174383/vars-package-of-r-aic-after-restrict
-# http://www.phdeconomics.sssup.it/documents/Lesson18.pdf | VARselect {vars} documentation
+
 VARaic <- function(model){
   T_ <- model$obs
   p <- model$p

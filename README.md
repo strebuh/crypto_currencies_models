@@ -14,9 +14,9 @@ This project consists of several requirements:
 
 In this repository apart from libraries available on `CRAN` I use two functions written by my lecturers:
 
-`getCryptoHistoricalPrice` by Paweł Sakowski, Phd 
+1. `getCryptoHistoricalPrice`  **by Paweł Sakowski, Phd **
 
-`testdf` by Phd. Rafał Woźniak, Phd
+2. `testdf` **by Phd. Rafał Woźniak, Phd**
 
 I have written function that compares each pair of currencies available on www.coinmarketcap.com at selected time span, and performs cointegration test of non-stationary time series to identify pairs of currencies that may be cointegrated, and which are `I(1)`. Exact verification must be done comparing ADF test results from time series function output, with Dickey-Fuller cointegration table selecting appropriate number of observations and regressors of linear combination.
 
@@ -24,11 +24,13 @@ The table below shows the results of cointegration analysis made in loop for **l
 
 ![tesult_table2](img/tesult_table2.png)
 
-Table above shows example output, where a row contains Engle&Granger and Johansen cointegration procedures results, testing for integration of series that are themselves I(1).
+Table above shows example output, where a row contains Engle&Granger and Johansen cointegration procedures results, testing for integration of series that are themselves I(1). Each row of the table contains several information.  The full results (full table) is availabe in **all_combinations_coint_2.RDS** object in data cataloge.
 
-Each row of the table contains several information. First column  is the **range of  time of in sample data**, **number of observations** used for each currency in cointegration procedure. Next 3 columns are consecutively **name of the first crypto currency** followed by **adf test p-value** for the first augmentation that do not reveal the problem of autocorrelation of any lag; *if mentioned p-value is higher that 5%* critical value, next column contain **adf test p-values of the first difference series**. Columns 7-9 present the according results for second crypto currency.   Column 10 tells the rank of VECM model obtained from **Johansen test **(**zero**: no cointegrating vector; **one**: one cointegrating vector). One additional improvement to be done is to introduce another column, Jarque-Bera test of residuals, which would suggest if Johansen test assumption of normality is met.
-
-Last three columns refer to linear combination of crypto currencies. It's adf statistic, cointegrating vector and information, and final information regarding cointegration.
+1. First column  is the **range of  time of in sample data**, **number of observations** used for each currency in cointegration procedure. 
+2. Next 3 columns are consecutively **name of the first crypto currency** followed by **adf test p-value** for the first augmentation that do not reveal the problem of autocorrelation of any lag; *if mentioned p-value is higher that 5%* critical value, next column contain **adf test p-values of the first difference series**. 
+3. Columns 7-9 present the according results for second crypto currency.   
+4. Column 10 tells the rank of VECM model obtained from **Johansen test **(**zero**: no cointegrating vector; **one**: one cointegrating vector). One additional improvement to be done is to introduce another column, Jarque-Bera test of residuals, which would suggest if Johansen test assumption of normality is met.
+5. Last three columns refer to linear combination of crypto currencies. It's adf statistic, cointegrating vector and information, and final information regarding cointegration.
 
 There are three possibilties:
 
@@ -36,15 +38,13 @@ There are three possibilties:
 2. **not integrated** - direct answer, when at least one of the condition of cointegration was not met. Example in the first row shows that this pair is not cointegrated, because the p-value for the first augmentation of time series, that does not deal with autocorrelation is lower than 5% critical value, suggesting that the second currency was I(0) within considered period. If pair was cointegrated according to Engle&Granger but Johansen test did not supported this thesis (showing zero), the final column shows **not cointegrated**. 
 3. **data not available** is shown when ``getCryptoHistoricalPrice`` faild to download the data, probably due to the fact that data was available under modified name for one currency, thus generic link was not appropriate. In this can neither of the test was performed, and we do not consider this pair.
 
+Among considered 4950 combinations, 4067 appeared not to be cointegrated in given period, 764 cases resulted in error in data collection, and 119 could be reviewed for further consideration, and drawing conclusion based on ADF statistic of linear combination. Such high result in not integrated results may be caused by non-normal distribution of residuals in Johansen test, thus in fact more pairs might have been cointegrated. This is the topic of further improvements to be done.
 
+![cointegration_counts](img/cointegration_counts.png)
 
-Among considered 4950 combinations, _______ appeared not to be cointegrated in given period, ___cases resulted in error in data collection, and ____could be reviewed for further consideration, and drawing conclusion based on ADF statistic of linear combination.
-
-Considering only combinations which ADF statistic lower than -3.8, ____ pairs were obtained, out of which after visual revision of the series plots and their acf/pacf plots, the cardano-siacoin pair was selected.  
+Considering only combinations which ADF statistic lower than -3.8, 35 pairs were obtained, out of which after visual revision of the series plots and their acf/pacf plots, the  **Bitcoin-Dogecoin** pair was selected.  
 
 For each pair cointegration tests were performed for 365 observations (in sample), and following 15 were saved as out of sample, however finally forecasts were done for 7 days ahead.
-
-
 
 ### **Bitcoin-Dogecoin** - visual inspection
 
@@ -258,7 +258,28 @@ The same is also observed for autocorrelation test.
 
 
 
-### Forecasts
+### Forecasts and conclusions
 
-Finally let's compare 7 days forecast out of sample period ()
+Finally let's compare 7 days forecast out of sample period, which ranged from  June 2nd to June 8th 2020, for reference 30 days were incorporated on the plots. Forecast errors were computed after transformation of log-prices to prices.  
 
+![forecasts](img/forecasts_2.png)
+
+
+
+Comparing mean errors for bitcoin, it is visible that the lowest MAE, MSE, MAPE and AMAPE belongs to VAR model. It is not surprising that Arima model had much worst results, VECM model has also higher errors, which may be caused be the fact that in spite of the fact that VECM(1) model corresponds to VAR(2) model, forecast was done based on VECM model transformed to VAR, which resulted in slight difference of coefficients, coefficients which is visible below.
+
+In case of second currency, Dogecoin, due to the fact that it's unit prices are much lower, the errors are such low, that MSE for all models after rounding up to 6 digits was still 0, thus **MSE values, if lower than 0.000001 were multiplied by 1,000,000** for visual inspection convenience.
+
+#### Bitcoin
+
+
+
+![bitcoin_forecasts](img/bitcoin_forecasts.png)
+
+#### Dogecoin
+
+![dogecoin_forecasts](img/dogecoin_forecasts.png)
+
+
+
+Plots of forecasts confirm previous findings, ARIMA model confidence intervals were such wide that an upper ones did not fit the plot. VAR and VECM confidence intervals seems similar, which confirms close  association of these models.
