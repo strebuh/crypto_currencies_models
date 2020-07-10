@@ -15,7 +15,7 @@ This project consists of several requirements:
 
 In this repository apart from libraries available on `CRAN` I use two functions written by lecturers of Department of Economic Sciences of University of Warsaw:
 
-1. `getCryptoHistoricalPrice`  **by Paweł Sakowski, Phd **
+1. `getCryptoHistoricalPrice`  **by Paweł Sakowski, Phd**
 
 2. `testdf` **by Phd. Rafał Woźniak, Phd**
 
