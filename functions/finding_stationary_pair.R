@@ -23,14 +23,6 @@ merge_crypto_pair <- function(x,       # 1st df from getCryptoHistoricalPrice
                               xts = T  # should be transformed to XTS?
                               ){
   
-  # x[,"Date"] <- as.Date(x[,"Date"], format="%Y-%m-%d")
-  # y[,"Date"] <- as.Date(y[,"Date"], format="%Y-%m-%d")
-  # x_ <- getCryptoHistoricalPrice(x)
-  # message(paste(x," has been downloaded."))
-  # 
-  # y_ <- getCryptoHistoricalPrice(y)
-  # message(paste(y," has been downloaded."))
-  
   xy <- merge(x[,c("Date", "Close")], y[,c("Date", "Close")], by="Date")
   
   if(xts){
@@ -50,29 +42,37 @@ find_cointegration <- function(xy,                  # df merged xts with prices
                                log_prices = T       # if to transform to log prices
                                ){
 
+  # log transformation
   if(log_prices){
     xy[,1] <- log(xy[,1])
     xy[,2] <- log(xy[,2])
   }
 
+  # 1st item ADF test
   x <- testdf(variable = xy[,1],
               max.augmentations = aug, max.order = aug)
-
+  
+  # columns holding Breush-Godfrey p-values 
   bg_test_cols <- names(x)[(ncol(x) - aug+1):ncol(x)]
+  
+  # select adf from line where all BG pvalues are above 5%
   x_p_adf <-x[rowSums(x[bg_test_cols] > 0.05) == aug, "p_adf"][1]
 
+  # if that ADF over 5% compute difference and make for it ADF in similiar fashion
   if(x_p_adf > 0.05){
     x_d <- testdf(variable = diff.xts(xy[,1]),
                   max.augmentations = aug, max.order = aug)
+    # pick value where all BG above 5%
     x_d_p_adf <- x_d[rowSums(x_d[bg_test_cols] > 0.05) == aug, "p_adf"][1]
 
   } else {
+    # if ADF of 1st item below 5%, data stationary, difference gets NA (not comptted)
     x_d_p_adf <- NA
   }
 
+  # do the same for 2nd item
   y <- testdf(variable = xy[,2],
               max.augmentations = aug,  max.order = aug)
-  # integ_ord_b <-y[b$p_adf < 0.05 &y$p_bg > 0.05, "augmentations"]
 
   y_p_adf <-y[rowSums(y[bg_test_cols] > 0.05) == aug, "p_adf"][1]
 
@@ -88,18 +88,19 @@ find_cointegration <- function(xy,                  # df merged xts with prices
   names_ <- names(xy)
   combination_formula <- as.formula(paste(names_[2], names_[1], sep="~"))
 
-  # linear combination
+  # -- linear combination -- 
   model.coint <- lm(combination_formula,
                     data = xy)
-
   model_summary <- summary(model.coint)
 
+  # ADF of linear combination
   xy_comb_test <- testdf(variable = residuals(model.coint),
                          max.augmentations = aug, max.order = aug)
 
-
+  # ADF result wher all BG above 5%
   bg_all_aug <- xy_comb_test[rowSums(xy_comb_test[bg_test_cols] > 0.05) == aug,]
 
+  # if such item exists, prepare results items
   if(dim(bg_all_aug)[1] != 0){
     xy_comb_p_adf <- bg_all_aug$p_adf[1]
     xy_comb_adf_stat <- bg_all_aug$adf[1]
@@ -109,11 +110,13 @@ find_cointegration <- function(xy,                  # df merged xts with prices
     xy_comb_adf_stat < NA
     xy_comb_aug <- NA
   }
-
+  # cointegration vector to be printedin result
   coint_vec <- paste(c(1, round(-model_summary$coefficients[1,1],4), round(-model_summary$coefficients[2,1],4)), collapse=" ")
 
+  # output information if data is cointegrated
   coint_info <- if(!is.na(x_d_p_adf) & !is.na(y_d_p_adf) & !is.na(xy_comb_adf_stat)) "compare combin_adf" else "not integrated"
 
+  #  prepare vectorsof results, with or withoug dates
   if(include_dates){
     res_names <- c("first_is", "last_is", "n_obs","cc1", "cc1_p_adf", "cc1_diff_p_adf", "cc2", "cc2_p_adf", "cc2_diff_p_adf", "combin_adf", "coint_vec", "conint_info")
     results <- c(as.character(index(xy)[1]), as.character(index(xy)[nrow(xy)]), nrow(xy), names(xy)[1], round(x_p_adf,4), round(x_d_p_adf,4), names(xy)[2], round(y_p_adf,4), round(y_d_p_adf,4),
@@ -123,7 +126,8 @@ find_cointegration <- function(xy,                  # df merged xts with prices
     results <- c(nrow(xy), names(xy)[1], round(x_p_adf,4), round(x_d_p_adf,4), names(xy)[2], round(y_p_adf,4), round(y_d_p_adf,4),
                  xy_comb_adf_stat, coint_vec, coint_info)
   }
-
+  
+  # rename results and return it
   names(results) <- res_names
   return(results)
 }
@@ -132,93 +136,99 @@ find_cointegration <- function(xy,                  # df merged xts with prices
 #----------------------------------------------------------------------------------------------------------------------------
 # do cointegration checks for given pair of currencies WITH Johansen
 
-
 find_cointegration2 <- function(xy, 
                                 aug = 10, 
                                 include_dates = T, 
                                 log_prices = T
                                 ){
   
+  # log transformation
   if(log_prices){
     xy[,1] <- log(xy[,1])
     xy[,2] <- log(xy[,2])
   }
+  
+  # 1st item ADF test
   x <- testdf(variable = xy[,1],
               max.augmentations = aug, max.order = aug)
-  bg_test_cols <- names(x)[(ncol(x) - aug+1):ncol(x)]
-  x_p_adf <-x[rowSums(x[bg_test_cols] > 0.05) == aug, "p_adf"][1] 
   
+  # columns holding Breush-Godfrey p-values 
+  bg_test_cols <- names(x)[(ncol(x) - aug+1):ncol(x)]
+  
+  # select adf from line where all BG pvalues are above 5%
+  x_p_adf <-x[rowSums(x[bg_test_cols] > 0.05) == aug, "p_adf"][1]
+  
+  # if that ADF over 5% compute difference and make for it ADF in similiar fashion
   if(x_p_adf > 0.05){
     x_d <- testdf(variable = diff.xts(xy[,1]),
                   max.augmentations = aug, max.order = aug)
-    x_d_p_adf <- x_d[rowSums(x_d[bg_test_cols] > 0.05) == aug, "p_adf"][1] 
+    # pick value where all BG above 5%
+    x_d_p_adf <- x_d[rowSums(x_d[bg_test_cols] > 0.05) == aug, "p_adf"][1]
     
   } else {
+    # if ADF of 1st item below 5%, data stationary, difference gets NA (not comptted)
     x_d_p_adf <- NA
   }
   
+  # do the same for 2nd item
   y <- testdf(variable = xy[,2],
               max.augmentations = aug,  max.order = aug)
-  # integ_ord_b <-y[b$p_adf < 0.05 &y$p_bg > 0.05, "augmentations"]
   
-  y_p_adf <-y[rowSums(y[bg_test_cols] > 0.05) == aug, "p_adf"][1] 
+  y_p_adf <-y[rowSums(y[bg_test_cols] > 0.05) == aug, "p_adf"][1]
   
   if(y_p_adf > 0.05){
     y_d <- testdf(variable = diff.xts(xy[,2]),
                   max.augmentations = aug, max.order = aug)
-    y_d_p_adf <- y_d[rowSums(y_d[bg_test_cols] > 0.05) == aug, "p_adf"][1] 
+    y_d_p_adf <- y_d[rowSums(y_d[bg_test_cols] > 0.05) == aug, "p_adf"][1]
     
   } else {
     y_d_p_adf <- NA
   }
   
   names_ <- names(xy)
-  
-  x <- grep("-", names_)
-  for(i in x){
-    names_[i] <- paste0("`", names_[i], "`")
-  }
-  
   combination_formula <- as.formula(paste(names_[2], names_[1], sep="~"))
-
-    # linear combination
-  model.coint <- lm(combination_formula, 
-                    data = xy)
   
+  # -- linear combination -- 
+  model.coint <- lm(combination_formula,
+                    data = xy)
   model_summary <- summary(model.coint)
   
+  # ADF of linear combination
   xy_comb_test <- testdf(variable = residuals(model.coint),
                          max.augmentations = aug, max.order = aug)
   
-  
+  # ADF result wher all BG above 5%
   bg_all_aug <- xy_comb_test[rowSums(xy_comb_test[bg_test_cols] > 0.05) == aug,]
   
+  # if such item exists, prepare results items
   if(dim(bg_all_aug)[1] != 0){
-    xy_comb_p_adf <- bg_all_aug$p_adf[1] 
+    xy_comb_p_adf <- bg_all_aug$p_adf[1]
     xy_comb_adf_stat <- bg_all_aug$adf[1]
     xy_comb_aug <- bg_all_aug$augmentations[1]
   } else {
     xy_comb_p_adf <- NA
     xy_comb_adf_stat < NA
     xy_comb_aug <- NA
-  } 
-  
+  }
+  # cointegration vector to be printedin result
   coint_vec <- paste(c(1, round(-model_summary$coefficients[1,1],4), round(-model_summary$coefficients[2,1],4)), collapse=" ")
   
-  # johansen
+  
+  #  -- johansen -- 
+  
+  # select order of VAR 
   VAR_select <- VARselect(xy[,1:2], lag.max = 14, type = "const")
   K <- VAR_select$selection[1]
-  # print(K)
-  
+
+  # if order 1 perform additional test for rank, and based on that change K value (VAR order)
   if(K==1){
     suppressWarnings({
       vecm_rank <- rank.select(xy[,1:2], lag.max = 14, include = "const")
     })
     K <- vecm_rank$AIC_min[2]+1
-    # print(K)
   }
 
-  
+  # perform trance and eigenvalue johansen test
   johan.test.trace <- ca.jo(xy[,1:2],         
                             ecdet = "const", 
                             type = "trace",  
@@ -228,7 +238,7 @@ find_cointegration2 <- function(xy,
                             ecdet = "const", 
                             type = "eigen",  
                             K = K) 
-  
+  # if r=0 H0 rejected and r<=1 not rejected in both one cointegration vector, else zero 
   if((johan.test.trace@cval[1,2] > johan.test.trace@teststat[1]) & 
      (johan.test.trace@cval[2,2] < johan.test.trace@teststat[2]) &
      (johan.test.eigen@cval[1,2] > johan.test.eigen@teststat[1]) &
@@ -239,12 +249,14 @@ find_cointegration2 <- function(xy,
     johansen <- "zero"
   }
   
+  # based on E.-G. and johansen prepare info about cointegraion
   coint_info <- if(!is.na(x_d_p_adf) & 
                    !is.na(y_d_p_adf) &
                    !is.na(xy_comb_adf_stat) & 
                    (johansen == "one")
                    ) "compare combin_adf" else "not integrated"
   
+  # prepare results
   if(include_dates){
     res_names <- c("first_is", "last_is", 
                    "n_obs","cc1", "cc1_p_adf", "cc1_diff_p_adf", 
@@ -300,13 +312,17 @@ get_cointegration_table <- function(pairs_dt,               # 2 column df with n
 
   for(i in (1:nrow(pairs_dt))){
     
+    # whichpari is being processed
     message(paste("Current pair is:", pairs_dt[i,1], "and", pairs_dt[i,2]))
     
+    # try to download data and perform analysis
     possibleError <- tryCatch(
       {
+        # names of items
         c1 <- as.character(pairs_dt[i,1])
         c2 <- as.character(pairs_dt[i,2])
-
+      
+      # if such items are not in datalist try to download
       if(!c1 %in% names(data_list)){
         print(paste(c1,"pobierane"))
         c1_ <- getCryptoHistoricalPrice(c1)
@@ -321,24 +337,28 @@ get_cointegration_table <- function(pairs_dt,               # 2 column df with n
         data_list[[c2]] <-  c2_
       }
         
-        # 
+        # get selected items from data list
         c1_ <- data_list[[c1]]
         c2_ <- data_list[[c2]]
         
+        # merge then to one xts
         c1_c2 <- merge_crypto_pair(c1_, 
                                    c2_, 
                                    c1, 
                                    c2, 
                                    xts = T)
+        # if in sample number given, strip the data acorrdingly
         if(!is.null(in_sample)){
           pairs_list[[paste0(c1,"_",c2)]] <- tail(c1_c2, in_sample + oo_sample)
           c1_c2 <- head(tail(c1_c2, in_sample + oo_sample), in_sample)
         }
         
+        # if chosen standardize
         if(standardize){
           c1_c2 <- scale(c1_c2)
         }
         
+        # perform cointegration analysis
         if(johansen){
           if(include_dates){
             if(log_prices){
@@ -378,7 +398,8 @@ get_cointegration_table <- function(pairs_dt,               # 2 column df with n
           } 
       }, error=function(e) e
     )
-
+    
+    # if there was error save in results just names of items, while the rest is NA, and print message which items failed to be downloaded
     if(inherits(possibleError, "error")){
 
       c1 <- as.character(pairs_dt[i,1])
@@ -394,7 +415,8 @@ get_cointegration_table <- function(pairs_dt,               # 2 column df with n
           c(NA, NA, NA, c1, NA, NA, c2, NA, NA, NA, NA, "data not available")
       }
     }
-    
+
+    # bind results to one matrix    
       # if(!is.null(coint_info)){
         results <- rbind(results, coint_info)
       # }
@@ -404,14 +426,19 @@ get_cointegration_table <- function(pairs_dt,               # 2 column df with n
     }
   }
   
+  # transform to data frame
   results <- as.data.frame(results)
   
   return_list <- list()
+  # first elemet of result is dataframe with cointegration results
   return_list[['results']] <- results
-  return_list[['raw_data']] <- data_list
-  return_list[['pairs_data']] <- pairs_list
-  # return_list[['failed_pairs']] <- failed_pairs
   
+  # second item is list of rad downloaded data
+  return_list[['raw_data']] <- data_list
+  
+  # third item is list of datarames of combiend closing prices
+  return_list[['pairs_data']] <- pairs_list
+
   return(return_list)
 }
 
@@ -465,8 +492,7 @@ getDifferencesXTS <- function(coint_table,          # table with results of coin
   crypto_pair[,c1d] <- diff.xts(crypto_pair[,c1])
   crypto_pair[,c2d] <- diff.xts(crypto_pair[,c2])
   crypto_pair <- xts(crypto_pair[,-3], order.by = crypto_pair$Date)
-  # print(dim(crypto_pair))
-  
+
   data <- list(in_smpl = head(crypto_pair, n_obs_is), oo_smpl = tail(crypto_pair, n_obs_ooc))
   return(data)
 }
@@ -490,6 +516,7 @@ get_pair_plot <- function(x,                    # name of 1st item
     y_df <- data_list[[y]]
   }
   
+  # if ggplot prepare data for ggplot (needs to be long data frame)
   if(ggplot){
     
     xy <- merge_crypto_pair(x_df, y_df,  xts = F)
@@ -510,7 +537,7 @@ get_pair_plot <- function(x,                    # name of 1st item
     
     xy_long <- xy %>%
       gather(key = "variable", value = "value", -Date)
-    # Multiple line plot
+
     gg_plot <- ggplot(xy_long, aes(x = Date, y = value)) +
       geom_line(aes(color = variable), size = 1) +
       scale_color_manual(values = c("#00AFBB", "#E7B800")) +
@@ -520,7 +547,7 @@ get_pair_plot <- function(x,                    # name of 1st item
     return(list(data = xy, plot = gg_plot))
     
   } else {
-    
+    # else prepare data for baseplot plotting
     xy <- merge_crypto_pair(x_df, y_df, x, y,  xts = T)
     
     if(!is.null(n_last)){
@@ -640,126 +667,64 @@ cryptoPairPlots <- function(crypto_list,                 # list with data, but f
                                    crypto_list = NULL,
                                    log_prices = log_prices)$in_smpl
   
-  # # this hashed part is when you want prepare data manually
-  # c1 <- as.character(coint_table$cc1[n_table])
-  # c2 <- as.character(coint_table$cc2[n_table])
-  # 
-  # # merge raw data
-  # crypto_pair <- merge_crypto_pair(crypto_list[[c1]],
-  #                                  crypto_list[[c2]],
-  #                                  c1,
-  #                                  c2,
-  #                                  xts = T)
-  # if(log_prices){
-  #   
-  #   crypto_pair[,c1] <- log(crypto_pair[,c1])
-  #   crypto_pair[,c2] <- log(crypto_pair[,c2])
-  #   
-  #   # change names to indicate log
-  #   names(crypto_pair)[match(names(crypto_pair),c(c1,c2))] <- c(paste0("log_",c1), paste0("log_",c2))
-  #   c1 <- paste0("log_",c1)
-  #   c2 <- paste0("log_",c2)
-  # }
-  # 
-  # c1d <- paste0("d_",c1)
-  # c2d <- paste0("d_",c2)
-  # 
-  # # subset
-  # crypto_pair <- head(tail(crypto_pair,in_sample + oo_sample), in_sample)
-  
-  # get plot of prices/log prices
-  # get_pair_plot2(crypto_pair, ggplot = ggplot, standardize = scale_plot)
-  
   c1d <- names(crypto_pair)[3]
   c2d <- names(crypto_pair)[4]
   
-  # plot of differences
+  # plot of first differences
   if(diffPlots){
+    
     par(mfrow = c(2, 1)) 
     get_pair_plot2(crypto_pair, ggplot = ggplot, standardize = scale_plot, colors = colors)
     print(plot(crypto_pair[,c(c1d,c2d)],
-               # xaxt = "n",
                main = paste(c1d, "and", c2d),
                col = alpha(colors, alpha),
-               # major.ticks = "years",
-               # grid.ticks.on = "years",
                grid.ticks.lty = 3,
                legend.loc = "bottomleft",
                )) # c1d
-    # print(plot(crypto_pair[,c2d], 
-    #            main = c2d)) # c2d
     par(mfrow = c(1, 1))
   }
 
+  # ACF PACF plots 
+  c1_acf <- acf(crypto_pair[,3],
+                lag.max = plot_lags,
+                plot = FALSE,
+                na.action = na.pass)
+  c1_pacf <- pacf(crypto_pair[,3],
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass)
+  c2_acf <- acf(crypto_pair[,4],
+                lag.max = plot_lags, 
+                plot = FALSE,
+                na.action = na.pass)
+  c2_pacf <- pacf(crypto_pair[,4],
+                  lag.max = plot_lags, 
+                  plot = FALSE,
+                  na.action = na.pass)
   
-  # # plot of colerograms
-  # if(colerograms){
-  #   for(i in names(crypto_pair)[3:4]){ # c(c1d, c2d)
-  #     title <- paste("ACF and PACF of", i)
-  #     par(mfrow = c(2, 1))
-  #     acf(crypto_pair[,i],
-  #         lag.max = plot_lags,
-  #         ylim = c(-0.5, 0.5),
-  #         lwd = 5,
-  #         col = "dark green",
-  #         na.action = na.pass,
-  #         main = title)
-  #     pacf(crypto_pair[,i],
-  #          lag.max = plot_lags,
-  #          ylim = c(-0.5, 0.5),
-  #          lwd = 5, col = "dark green",
-  #          na.action = na.pass,
-  #          main = ""
-  #          )
-  #     par(mfrow = c(1, 1))
-  #   }
-  #   par(mfrow = c(1, 1))
-  # } else {
-  # for(i in names(crypto_pair)[3:4]){
-    # title <- paste("ACF and PACF of", i)
-        c1_acf <- acf(crypto_pair[,3],
-                      lag.max = plot_lags,
-                      plot = FALSE,
-                      na.action = na.pass)   
-        c1_pacf <- pacf(crypto_pair[,3], 
-                        lag.max = plot_lags, 
-                        plot = FALSE,
-                        na.action = na.pass
-                        ) 
-        c2_acf <- acf(crypto_pair[,4],
-                      lag.max = plot_lags, 
-                      plot = FALSE,
-                      na.action = na.pass)
-        c2_pacf <- pacf(crypto_pair[,4],
-                        lag.max = plot_lags, 
-                        plot = FALSE,
-                        na.action = na.pass)
-        
-        par(mfrow = c(2, 2)) 
-        plot(c1_acf, 
-             ylim = c(-0.5, 0.5),    
-             lwd = 5,              
-             col = colors[1],
-             main = paste(c1d, "ACF"))
-        plot(c1_pacf, 
-             ylim = c(-0.5, 0.5),    
-             lwd = 5,              
-             col = colors[1],
-             main = paste(c1d, "PACF"))
-        plot(c2_acf,
-             ylim = c(-0.5, 0.5),
-             lwd = 5,
-             col = colors[2],
-             main = paste(c2d, "ACF"))
-        plot(c2_pacf,
-             ylim = c(-0.5, 0.5),
-             lwd = 5,
-             col = colors[2],
-             main = paste(c2d, "PACF"))
-        par(mfrow = c(1, 1)) 
-  # }
-  # }
+  par(mfrow = c(2, 2))
+  plot(c1_acf,
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(c1d, "ACF"))
   
+  plot(c1_pacf,
+       ylim = c(-0.5, 0.5),    
+       lwd = 5,              
+       col = colors[1],
+       main = paste(c1d, "PACF"))
+  plot(c2_acf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(c2d, "ACF"))
+  plot(c2_pacf,
+       ylim = c(-0.5, 0.5),
+       lwd = 5,
+       col = colors[2],
+       main = paste(c2d, "PACF"))
+  par(mfrow = c(1, 1)) 
 
   
   # conditional data to return
@@ -771,6 +736,7 @@ cryptoPairPlots <- function(crypto_list,                 # list with data, but f
 #----------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------
 # functions to compute AIC and BIC for VAR model outside VARselect function for single model 
+
 
 VARaic <- function(model){
   T_ <- model$obs

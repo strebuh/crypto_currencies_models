@@ -34,7 +34,7 @@ dim(all_combinations) # [1] 4950    2
 
 # perform cointegration test for loaded combiantions of crypto currencies
 if(0){
-  all_combinations_cointegr <- get_cointegration_table(all_combinations,         # table with combinations of cryptocurrencies
+  all_combinations_cointegr <- get_cointegration_table(all_combinations[c(1,43,45,555,1678,3678),],         # table with combinations of cryptocurrencies
                                                        standardize = FALSE,            # if prices should be standardized
                                                        in_sample = 365,          # how many observations in sample
                                                        oo_sample = 15,           # how many observations out of sample (these are out of procedure)
