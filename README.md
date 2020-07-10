@@ -19,7 +19,7 @@ In this repository apart from libraries available on `CRAN` I use two functions 
 
 2. `testdf` **by Phd. Rafał Woźniak, Phd**
 
-In sake of performing analysis and selecting the right pair of crypto currencies several functions which became influential part of this project. The main function compares each pair of currencies available on www.coinmarketcap.com at selected time span.  It performs cointegration test of non-stationary time series to identify pairs of currencies that may be cointegrated, and which are `I(1)`. Exact verification must be done comparing ADF test results from time series function output, with Dickey-Fuller cointegration table selecting appropriate number of observations and regressors of linear combination.
+In sake of performing analysis and selecting the right pair of crypto currencies several functions were written which became influential part of this project. The main two functions are **get_cointegration_table** and **find_cointegration2**. The functions let compare each pair of currencies available on www.coinmarketcap.com at selected time span.  It performs cointegration test of non-stationary time series to identify pairs of currencies that may be cointegrated, and which are `I(1)`. Exact verification must be done comparing ADF test results from time series function output, with Dickey-Fuller cointegration table selecting appropriate number of observations and regressors of linear combination.
 
 The table below shows the results of cointegration analysis made in loop for **log closing prices**  of each pair of currencies available on the website, based on 365 observations (in sample) prior to mid June 2020. 
 
