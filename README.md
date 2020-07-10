@@ -5,20 +5,21 @@
 
 This project consists of several requirements:
 
-1. Selecting two cointegrated cryptocurrencies.
-2. Building Arima models.
-3. Making forecasts based on Arima for both currencies.
-4. Building VAR/VECM model.
-5. Making forecast.
-6. Comparing results.  
+1. Selecting two cointegrated cryptocurrencies
+2. Selecting Arima models
+4. Selecting VAR/VECM model
+5. Making forecast for selected ARIMA, VAR, VECM
+6. Comparing results
 
-In this repository apart from libraries available on `CRAN` I use two functions written by my lecturers:
+## Basic information
+
+In this repository apart from libraries available on `CRAN` I use two functions written by lecturers of Department of Economic Sciences of University of Warsaw:
 
 1. `getCryptoHistoricalPrice`  **by Paweł Sakowski, Phd **
 
 2. `testdf` **by Phd. Rafał Woźniak, Phd**
 
-I have written function that compares each pair of currencies available on www.coinmarketcap.com at selected time span, and performs cointegration test of non-stationary time series to identify pairs of currencies that may be cointegrated, and which are `I(1)`. Exact verification must be done comparing ADF test results from time series function output, with Dickey-Fuller cointegration table selecting appropriate number of observations and regressors of linear combination.
+In sake of performing analysis and selecting the right pair of crypto currencies several functions which became influential part of this project. The main function compares each pair of currencies available on www.coinmarketcap.com at selected time span.  It performs cointegration test of non-stationary time series to identify pairs of currencies that may be cointegrated, and which are `I(1)`. Exact verification must be done comparing ADF test results from time series function output, with Dickey-Fuller cointegration table selecting appropriate number of observations and regressors of linear combination.
 
 The table below shows the results of cointegration analysis made in loop for **log closing prices**  of each pair of currencies available on the website, based on 365 observations (in sample) prior to mid June 2020. 
 
@@ -46,7 +47,7 @@ Considering only combinations which ADF statistic lower than -3.8, 35 pairs were
 
 For each pair cointegration tests were performed for 365 observations (in sample), and following 15 were saved as out of sample, however finally forecasts were done for 7 days ahead.
 
-### **Bitcoin-Dogecoin** - visual inspection
+## **Bitcoin-Dogecoin** - visual inspection
 
 **Bitcoin-Dogecoin** pair was chosen for modeling and forecasting. Below are presented plots of their standardized log-prices which may serve as visual prove that those crypto currencies indeed seem cointegrated. In general they follow similar patter, and if not, the period they move in different direction is rather short while the difference between their log prices is not outstanding by visual inspection.
 
@@ -76,7 +77,7 @@ Linear combination model summary coefficients are significant (both log_bitcoin 
 
 Cointegrating vector is **[1, - 13.294229, -0.80464]**. It can be interpreted as follows, **if bitcoin log prices of increase by 1 percentage point, log prices increase by  ~0.8 percentage point**.
 
-![l_comb_summary](/img/l_comb_summary.png)
+![l_comb_summary](img/l_comb_summary.png)
 
  
 
@@ -92,7 +93,7 @@ The summary of the ECM model provides parameters that inform about short-run rel
 
 
 
-### Granger casuality
+## Granger casuality
 
 For selected pair of crypto currencies granger casuality analysis was performed to detect if, and which lag changes Bitcoin log-prices may granger cause changes of Degecoin and vice versa. The results are presented below. The null hypothesis stays that there is no Granger casuality.  The underlying Wald test p-values are present in columns 2 and 4. As the grangertest documentation says, they come from comparison of the unrestricted model—in which y is explained by the lags (up to given order order) of y and x — and the restricted model—in which y is only explained by the lags of y. Columns 3, 5 tell if at given lag the granger casuality was observed.   
 
@@ -100,7 +101,7 @@ For selected pair of crypto currencies granger casuality analysis was performed 
 
 The outcome shows that it is log-bitcoin that may have an granger casual effect on Dogecoin log-prices, at lags 1-4. Neither of 1-7 lags of Dogecoin exhibits granger cause effect on Bitcoin, which make sense, as Bitcoin has immensely bigger capitalization and prices; is simply much stronger crypto-currency.
 
-### ARIMA - Bitcoin
+## ARIMA - Bitcoin
 
 Four different ARIMA models were evaluated for Bitcoin. 
 
@@ -135,7 +136,7 @@ Both (AR and MA) coefficients were significant.
 
 
 
-### ARIMA - Dogecoin
+## ARIMA - Dogecoin
 
 Three different ARIMA models were evaluated for Bitcoin. 
 
@@ -171,7 +172,7 @@ AR coefficient was significant, however p-value was not equal 0.
 
 ![c2_arima_coeftest](img/c2_arima_coeftest.png)
 
-### VAR 
+## VAR 
 
 Function VAR select suggested two lags in vector autoregressive model. Three different models were checked.
 
@@ -222,7 +223,7 @@ The variance decomposition indicates the amount of information that each system 
 
 ![vd_VAR](img/vd_VAR.png)
 
-### VECM 
+## VECM 
 
 VECM model starts from checking cointegration with Johansen test. Johansen trace and Johansen eigenvalues test results give the same results, indicating that the rank of the system is equal 1, ie. there is one cointegrating vector, at 5% significance level. r=0 values are higher that c.v. thus we reject these null hypothesis, and look at r<=1, where we are not able to reject. 
 
@@ -258,7 +259,7 @@ The same is also observed for autocorrelation test.
 
 
 
-### Forecasts and conclusions
+## Forecasts and conclusions
 
 Finally let's compare 7 days forecast out of sample period, which ranged from  June 2nd to June 8th 2020, for reference 30 days were incorporated on the plots. Forecast errors were computed after transformation of log-prices to prices.  
 
